@@ -23,7 +23,8 @@ class SSHChannelWriter:
 
     def write(self, data):
         try:
-            logger.debug(f"[SSH WRITE] len={len(data)} repr={repr(data[:50])}...")
+            logger.debug(f"[SSH WRITE] len={len(data)} repr={
+                         repr(data[:50])}...")
             self._chan.write(data)
         except (BrokenPipeError, asyncio.CancelledError):
             pass
@@ -78,7 +79,8 @@ class MySSHServerSession(asyncssh.SSHServerSession):
                     self._resize_event.clear()
                     self._tui.resize(self._width, self._height)
                     self.redraw_tui()
-                    logger.debug(f"[TUI] Resized to {self._width}x{self._height}")
+                    logger.debug(f"[TUI] Resized to {
+                                 self._width}x{self._height}")
 
                 await asyncio.sleep(0.1)
 
@@ -117,7 +119,7 @@ class MySSHServerSession(asyncssh.SSHServerSession):
         if not self._chan.is_closing():
             self._chan.exit(0)
 
-    def terminal_size_changed(self, width, height, pixwidth, pixheight) -> bool:
+    def terminal_size_changed(self, width, height, pixwidth, pixheight):
         logger.debug(f"[SSH] Terminal size changed: {width}x{height}")
         self._width = width
         self._height = height

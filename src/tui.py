@@ -18,8 +18,10 @@ class Tui:
         )
 
         layout["header"].update(Panel("HEADER", style="bold white on blue"))
-        layout["main"].update(Panel("Main content area", style="white on black"))
-        layout["footer"].update(Panel("FOOTER", style="bold white on dark_green"))
+        layout["main"].update(
+            Panel("Main content area", style="white on black"))
+        layout["footer"].update(
+            Panel("FOOTER", style="bold white on dark_green"))
 
         return layout
 

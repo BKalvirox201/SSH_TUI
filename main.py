@@ -17,7 +17,7 @@ async def start_server() -> None:
         MySSHServer,
         "",
         8022,
-        server_host_keys=["ssh_key"],
+        server_host_keys=["./ssh/ssh_host_key"],
     )
 
 

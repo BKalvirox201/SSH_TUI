@@ -1,7 +1,7 @@
 import asyncio
 import asyncssh
 
-from src.ssh_session import MySSHServerSession
+from src.session import MySSHServerSession
 
 
 class MySSHServer(asyncssh.SSHServer):

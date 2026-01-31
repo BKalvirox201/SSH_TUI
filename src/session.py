@@ -3,7 +3,7 @@ import asyncio
 import logging
 import contextlib
 from rich.console import Console
-from .session_tui import Tui
+from .tui import Tui
 
 logging.basicConfig(
     level=logging.DEBUG,

@@ -13,6 +13,10 @@ logger = logging.getLogger(__name__)
 
 ANSI_CLEAR_SCREEN = "\x1b[2J"
 ANSI_CURSOR_HOME = "\x1b[H"
+ANSI_HIDE_CURSOR = "\x1b[?25l"
+ANSI_SHOW_CURSOR = "\x1b[?25h"
+ANSI_ALT_SCREEN_ON = "\x1b[?1049h"
+ANSI_ALT_SCREEN_OFF = "\x1b[?1049l"
 
 
 class SSHChannelWriter:
@@ -23,8 +27,6 @@ class SSHChannelWriter:
 
     def write(self, data):
         try:
-            logger.debug(f"[SSH WRITE] len={len(data)} repr={
-                         repr(data[:50])}...")
             self._chan.write(data)
         except (BrokenPipeError, asyncio.CancelledError):
             pass
@@ -36,12 +38,9 @@ class SSHChannelWriter:
 class MySSHServerSession(asyncssh.SSHServerSession):
     def connection_made(self, chan: asyncssh.SSHServerChannel):
         self._chan = chan
-        self.running = True
 
     def connection_lost(self, exc):
-        self.running = False
-        if hasattr(self, "_tui_task"):
-            self._tui_task.cancel()
+        asyncio.create_task(self._shutdown())
 
     def pty_requested(self, term_type, term_size, term_modes):
         return True
@@ -51,8 +50,6 @@ class MySSHServerSession(asyncssh.SSHServerSession):
 
     def session_started(self) -> None:
         self._width, self._height, _, _ = self._chan.get_terminal_size()
-        logger.debug(f"[SSH] Session started: {self._width}x{self._height}")
-
         self._tui = Tui(self._width, self._height)
         self.console = Console(
             file=SSHChannelWriter(self._chan),
@@ -69,20 +66,18 @@ class MySSHServerSession(asyncssh.SSHServerSession):
 
         self._tui_task = asyncio.create_task(self.run_tui())
         self.running = True
+        self.console.file.write(ANSI_ALT_SCREEN_ON + ANSI_HIDE_CURSOR)
+        self.draw_tui()
 
     async def run_tui(self):
-        logger.debug("run_tui() starting")
         try:
-            self.redraw_tui()
             while self.running:
                 if self._resize_event.is_set():
                     self._resize_event.clear()
                     self._tui.resize(self._width, self._height)
-                    self.redraw_tui()
-                    logger.debug(f"[TUI] Resized to {
-                                 self._width}x{self._height}")
+                    self.draw_tui()
 
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.01)
 
         except asyncio.CancelledError:
             logger.debug("run_tui() cancelled")
@@ -91,16 +86,11 @@ class MySSHServerSession(asyncssh.SSHServerSession):
         except Exception as e:
             logger.exception(f"TUI loop exception: {e}")
 
-        finally:
-            if not self._chan.is_closing():
-                self._chan.exit(0)
-
-    def redraw_tui(self):
+    def draw_tui(self):
         """Clear the screen and redraw the TUI."""
         try:
             self.console.file.write(ANSI_CLEAR_SCREEN + ANSI_CURSOR_HOME)
             self.console.print(self._tui.renderable())
-            self.console.file.flush()
         except Exception as e:
             logger.exception(f"Error during TUI redraw: {e}")
 
@@ -110,18 +100,35 @@ class MySSHServerSession(asyncssh.SSHServerSession):
             asyncio.create_task(self._shutdown())
 
     async def _shutdown(self):
-        logger.debug("[SSH] Shutting down session")
+        if not getattr(self, "running", False):
+            return
+
         self.running = False
+
         if hasattr(self, "_tui_task"):
+            logger.debug("_shutdown: cancelling _tui_task")
             self._tui_task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await self._tui_task
-        if not self._chan.is_closing():
+
+        if hasattr(self, "console"):
+            try:
+                logger.debug("_shutdown: restoring cursor")
+                self.console.file.write(ANSI_ALT_SCREEN_OFF)
+                self.console.file.write(ANSI_SHOW_CURSOR)
+                logger.debug("_shutdown: cursor restore sent")
+                await asyncio.sleep(0.1)
+            except Exception as e:
+                logger.exception(f"_shutdown: failed to restore cursor: {e}")
+
+        if hasattr(self, "_chan") and not self._chan.is_closing():
             self._chan.exit(0)
 
     def terminal_size_changed(self, width, height, pixwidth, pixheight):
         logger.debug(f"[SSH] Terminal size changed: {width}x{height}")
         self._width = width
         self._height = height
-        self.loop.call_soon_threadsafe(self._resize_event.set)
+        self.console.width = self._width
+        self.console.height = self._height
+        self._resize_event.set()
         return True

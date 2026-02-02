@@ -11,13 +11,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-ANSI_CLEAR_SCREEN = "\x1b[2J"
-ANSI_CURSOR_HOME = "\x1b[H"
-ANSI_HIDE_CURSOR = "\x1b[?25l"
-ANSI_SHOW_CURSOR = "\x1b[?25h"
-ANSI_ALT_SCREEN_ON = "\x1b[?1049h"
-ANSI_ALT_SCREEN_OFF = "\x1b[?1049l"
-
 
 class SSHChannelWriter:
     """Wrap an asyncssh channel to make it look like a file for Rich."""
@@ -64,10 +57,10 @@ class MySSHServerSession(asyncssh.SSHServerSession):
         self._resize_event = asyncio.Event()
         self._chan.set_line_mode(False)
 
-        self._tui_task = asyncio.create_task(self.run_tui())
         self.running = True
-        self.console.file.write(ANSI_ALT_SCREEN_ON + ANSI_HIDE_CURSOR)
-        self.draw_tui()
+        self.loop.call_soon(self.draw_tui)
+        self.console.clear()
+        self._tui_task = asyncio.create_task(self.run_tui())
 
     async def run_tui(self):
         try:
@@ -87,10 +80,14 @@ class MySSHServerSession(asyncssh.SSHServerSession):
             logger.exception(f"TUI loop exception: {e}")
 
     def draw_tui(self):
-        """Clear the screen and redraw the TUI."""
         try:
-            self.console.file.write(ANSI_CLEAR_SCREEN + ANSI_CURSOR_HOME)
-            self.console.print(self._tui.renderable())
+            self.console.clear()
+            self.console.print(
+                self._tui.renderable(),
+                justify="center",
+                new_line_start=True,
+            )
+
         except Exception as e:
             logger.exception(f"Error during TUI redraw: {e}")
 
@@ -106,17 +103,14 @@ class MySSHServerSession(asyncssh.SSHServerSession):
         self.running = False
 
         if hasattr(self, "_tui_task"):
-            logger.debug("_shutdown: cancelling _tui_task")
             self._tui_task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await self._tui_task
 
         if hasattr(self, "console"):
             try:
-                logger.debug("_shutdown: restoring cursor")
-                self.console.file.write(ANSI_ALT_SCREEN_OFF)
-                self.console.file.write(ANSI_SHOW_CURSOR)
-                logger.debug("_shutdown: cursor restore sent")
+                self.console.show_cursor(True)
+                self.console.clear()
                 await asyncio.sleep(0.1)
             except Exception as e:
                 logger.exception(f"_shutdown: failed to restore cursor: {e}")
@@ -125,7 +119,6 @@ class MySSHServerSession(asyncssh.SSHServerSession):
             self._chan.exit(0)
 
     def terminal_size_changed(self, width, height, pixwidth, pixheight):
-        logger.debug(f"[SSH] Terminal size changed: {width}x{height}")
         self._width = width
         self._height = height
         self.console.width = self._width

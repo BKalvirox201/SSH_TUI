@@ -17,33 +17,22 @@ class Tui:
         layout = Layout(name="root")
 
         layout.split_column(
-            Layout(name="top_padding", size=1),
             Layout(name="header", size=5),
             Layout(name="main", ratio=1),
             Layout(name="footer", size=1),
         )
 
-        # Top padding: empty
-        # layout["top_padding"].update(
-        #    Panel("", box=MINIMAL, padding=0, style="on black")
-        # )
-
-        # Header: borderless, fill width
-        header_text = Text("HEADER", style="bold white on blue", justify="center")
+        header_text = Text(
+            "HEADER", style="bold white on black", justify="center")
         layout["header"].update(
-            Panel(header_text, box=MINIMAL, padding=(0, 0), style="on blue")
+            Panel(renderable=header_text, box=MINIMAL,
+                  padding=(0, 0), style="on black")
         )
-
-        # Main panel: keep border if you want
         layout["main"].update(
             Panel("Main content area", style="white on black", padding=(0, 1))
         )
-
-        # Footer: borderless, two texts justified left and right
-        left_text = Text("Left info", style="bold white on dark_green")
-        right_text = Text("Right info", style="bold white on dark_green")
-
-        # Combine left and right in a single line using Align
+        left_text = Text("Left info", style="bold white on black")
+        right_text = Text("Right info", style="bold white on black")
         footer_content = Text.assemble(
             left_text,
             Text(" " * (self.width - len(left_text.plain) - len(right_text.plain))),
@@ -52,14 +41,13 @@ class Tui:
 
         layout["footer"].update(
             Panel(
-                renderable="",
                 title=footer_content,
+                renderable="",
                 box=MINIMAL,
                 padding=(0, 0),
-                style="on dark_green",
+                style="on black",
             )
         )
-
         return layout
 
     def resize(self, width: int, height: int):
@@ -68,8 +56,7 @@ class Tui:
         self.height = height
         self.layout = self._build_layout()
 
-    def renderable(self):
-        """What Live displays."""
+    def render(self):
         return self.layout
 
 
@@ -78,8 +65,7 @@ def main():
     tui = Tui(width=console.width, height=console.height)
 
     try:
-        # Use Live to render the layout in-place
-        with Live(tui.renderable(), console=console, refresh_per_second=5, screen=True):
+        with Live(tui.render(), console=console, refresh_per_second=5, screen=True):
             while True:
                 width, height = console.size.width, console.size.height
                 tui.resize(width, height)

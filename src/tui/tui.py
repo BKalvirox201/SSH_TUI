@@ -22,17 +22,36 @@ class Tui:
             Layout(name="footer", size=1),
         )
 
+        # HEADER
         header_text = Text(
-            "HEADER", style="bold white on black", justify="center")
+            "HEADER",
+            style="bold white on blue",
+            justify="center",
+        )
+
         layout["header"].update(
-            Panel(renderable=header_text, box=MINIMAL,
-                  padding=(0, 0), style="on black")
+            Panel(
+                renderable=header_text,
+                box=MINIMAL,
+                padding=(0, 0),
+                style="on blue",
+            )
         )
+
+        # MAIN
         layout["main"].update(
-            Panel("Main content area", style="white on black", padding=(0, 1))
+            Panel(
+                "Main content area",
+                style="white on rgb(10,25,60)",
+                border_style="bright_blue",
+                padding=(0, 1),
+            )
         )
-        left_text = Text("Left info", style="bold white on black")
-        right_text = Text("Right info", style="bold white on black")
+
+        # FOOTER
+        left_text = Text("Left info", style="bold white on blue")
+        right_text = Text("Right info", style="bold white on blue")
+
         footer_content = Text.assemble(
             left_text,
             Text(" " * (self.width - len(left_text.plain) - len(right_text.plain))),
@@ -41,13 +60,14 @@ class Tui:
 
         layout["footer"].update(
             Panel(
-                title=footer_content,
                 renderable="",
+                title=footer_content,
                 box=MINIMAL,
                 padding=(0, 0),
-                style="on black",
+                style="on blue",
             )
         )
+
         return layout
 
     def resize(self, width: int, height: int):
@@ -61,19 +81,7 @@ class Tui:
 
 
 def main():
-    console = Console()
-    tui = Tui(width=console.width, height=console.height)
-
-    try:
-        with Live(tui.render(), console=console, refresh_per_second=5, screen=True):
-            while True:
-                width, height = console.size.width, console.size.height
-                tui.resize(width, height)
-                sleep(0.2)
-    except KeyboardInterrupt:
-        console.clear()
-        console.show_cursor()
-        print("Exited TUI.")
+    print("Exited TUI.")
 
 
 if __name__ == "__main__":

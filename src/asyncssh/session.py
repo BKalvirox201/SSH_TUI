@@ -4,13 +4,41 @@ import logging
 import contextlib
 from typing import cast
 from rich.console import Console
-from .tui import Tui
+from ..tui.tui import Tui
 
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+ESC = "\x1b"
+BEL = "\x07"
+
+
+def show_cursor() -> str:
+    """Show the terminal cursor."""
+    return f"{ESC}[?25h"
+
+
+def hide_cursor() -> str:
+    """Hide the terminal cursor."""
+    return f"{ESC}[?25l"
+
+
+def set_alt_screen(enable: bool) -> str:
+    """Enable or disable the alternate screen buffer."""
+    return f"{ESC}[?1049{'h' if enable else 'l'}"
+
+
+def clear_screen() -> str:
+    """Clear entire screen and move cursor to home."""
+    return f"{ESC}[2J{ESC}[H"
+
+
+def set_window_title(title: str) -> str:
+    """Set terminal window title."""
+    return f"{ESC}]0;{title}{BEL}"
 
 
 class SSHChannelWriter:
@@ -19,8 +47,9 @@ class SSHChannelWriter:
     def __init__(self, chan):
         self._chan = chan
 
-    def write(self, data):
-        self._chan.write(data)
+    def write(self, data: str):
+        pass
+        #self._chan.write(data) # remove final /r/n
 
     def flush(self):
         pass
@@ -50,16 +79,16 @@ class MySSHServerSession(asyncssh.SSHServerSession):
                 file=SSHChannelWriter(self._chan),
                 force_terminal=True,
                 color_system="truecolor",
+                record=True,
                 width=self._width,
                 height=self._height,
             )
 
             self.loop = asyncio.get_running_loop()
             self._resize_event = asyncio.Event()
-            self.console.set_alt_screen(True)
-            self.console.show_cursor(False)
-            self.console.set_window_title("Amazing TUI")
-
+            self._chan.write(set_alt_screen(True))
+            self._chan.write(set_window_title("MyWindowTitle"))
+            self._chan.write(hide_cursor())
             self.running = True
             self.draw_tui()
             self._tui_task = asyncio.create_task(self.run_tui())
@@ -74,7 +103,6 @@ class MySSHServerSession(asyncssh.SSHServerSession):
                     self._resize_event.clear()
                     self._tui.resize(self._width, self._height)
                     self.draw_tui()
-
                 await asyncio.sleep(0.01)
 
         except asyncio.CancelledError:
@@ -85,16 +113,11 @@ class MySSHServerSession(asyncssh.SSHServerSession):
 
     def draw_tui(self):
         try:
-            # How I want to write the output
-            self.console.print(self._tui.render())
-
-            # Debug to check that the height is correct
-            # for i in range(self._height - 1):
-            #    self._chan.write(
-            #        f"Line: {i+1}")
-            # self._chan.write(
-            #    f"Line: {self._height} | terminal height: {self._height}")
-
+            self._chan.write(clear_screen())
+            self.console.print(self._tui.render(), soft_wrap=False, end="")
+            recorded_tui = self.console.export_text(clear=True, styles=True)[:-2]
+            self._chan.write(recorded_tui)
+            # logger.info(repr(recorded_tui))
         except Exception as e:
             logger.exception(f"Error during TUI redraw: {e}")
 
@@ -108,7 +131,6 @@ class MySSHServerSession(asyncssh.SSHServerSession):
             return
 
         self.running = False
-
         if hasattr(self, "_tui_task"):
             self._tui_task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
@@ -116,9 +138,8 @@ class MySSHServerSession(asyncssh.SSHServerSession):
 
         if hasattr(self, "console"):
             try:
-                self.console.show_cursor(True)
-                self.console.set_alt_screen(False)
-                self.console.clear()
+                self._chan.write(show_cursor())
+                self._chan.write(set_alt_screen(False))
             except Exception as e:
                 logger.exception(f"_shutdown: failed to restore cursor: {e}")
 

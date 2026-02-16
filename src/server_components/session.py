@@ -2,9 +2,10 @@ import asyncssh
 import asyncio
 import logging
 import contextlib
-from typing import cast
 from rich.console import Console
 from ..tui.tui import Tui
+from .writer import SSHChannelWriter
+from typing import cast
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -12,52 +13,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-ESC = "\x1b"
-BEL = "\x07"
-
-
-def show_cursor() -> str:
-    """Show the terminal cursor."""
-    return f"{ESC}[?25h"
-
-
-def hide_cursor() -> str:
-    """Hide the terminal cursor."""
-    return f"{ESC}[?25l"
-
-
-def set_alt_screen(enable: bool) -> str:
-    """Enable or disable the alternate screen buffer."""
-    return f"{ESC}[?1049{'h' if enable else 'l'}"
-
-
-def clear_screen() -> str:
-    """Clear entire screen and move cursor to home."""
-    return f"{ESC}[2J{ESC}[H"
-
-
-def set_window_title(title: str) -> str:
-    """Set terminal window title."""
-    return f"{ESC}]0;{title}{BEL}"
-
-
-class SSHChannelWriter:
-    """Wrap an asyncssh channel to make it look like a file for Rich."""
-
-    def __init__(self, chan):
-        self._chan = chan
-
-    def write(self, data: str):
-        pass
-        #self._chan.write(data) # remove final /r/n
-
-    def flush(self):
-        pass
-
 
 class MySSHServerSession(asyncssh.SSHServerSession):
     def connection_made(self, chan: asyncssh.SSHServerChannel):
         self._chan = cast(asyncssh.SSHLineEditorChannel, chan)
+        self.writer = SSHChannelWriter(self._chan)
 
     def connection_lost(self, exc):
         asyncio.create_task(self._shutdown())
@@ -71,12 +31,13 @@ class MySSHServerSession(asyncssh.SSHServerSession):
 
     def session_started(self) -> None:
         try:
-            self._chan.clear_input()
-            self._chan.set_line_mode(False)
-            self._chan.set_echo(False)
+            self.writer.clear_input()
+            self.writer.set_line_mode(False)
+            self.writer.set_echo(False)
+
             self._tui = Tui(self._width, self._height)
             self.console = Console(
-                file=SSHChannelWriter(self._chan),
+                file=self.writer,
                 force_terminal=True,
                 color_system="truecolor",
                 record=True,
@@ -86,9 +47,9 @@ class MySSHServerSession(asyncssh.SSHServerSession):
 
             self.loop = asyncio.get_running_loop()
             self._resize_event = asyncio.Event()
-            self._chan.write(set_alt_screen(True))
-            self._chan.write(set_window_title("MyWindowTitle"))
-            self._chan.write(hide_cursor())
+            self.writer.set_alt_screen(True)
+            self.writer.set_window_title("MyWindowTitle")
+            self.writer.set_cursor_visibility(False)
             self.running = True
             self.draw_tui()
             self._tui_task = asyncio.create_task(self.run_tui())
@@ -113,11 +74,10 @@ class MySSHServerSession(asyncssh.SSHServerSession):
 
     def draw_tui(self):
         try:
-            self._chan.write(clear_screen())
+            self.writer.clear_screen()
             self.console.print(self._tui.render(), soft_wrap=False, end="")
             recorded_tui = self.console.export_text(clear=True, styles=True)[:-2]
-            self._chan.write(recorded_tui)
-            # logger.info(repr(recorded_tui))
+            self.writer.write_tui(recorded_tui)
         except Exception as e:
             logger.exception(f"Error during TUI redraw: {e}")
 
@@ -138,8 +98,8 @@ class MySSHServerSession(asyncssh.SSHServerSession):
 
         if hasattr(self, "console"):
             try:
-                self._chan.write(show_cursor())
-                self._chan.write(set_alt_screen(False))
+                self.writer.set_cursor_visibility(True)
+                self.writer.set_alt_screen(False)
             except Exception as e:
                 logger.exception(f"_shutdown: failed to restore cursor: {e}")
 

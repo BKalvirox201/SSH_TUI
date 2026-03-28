@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import cast
 import uuid
 
@@ -11,6 +12,7 @@ from src.core.lifecycle.session_stop import session_stop
 from src.core.logging import session_logger
 from src.events.global_events import (
     QuitEvent,
+    RenderEvent,
     ResizeEvent,
 )
 
@@ -23,6 +25,10 @@ class SSHServerSession(asyncssh.SSHServerSession):
     def connection_made(self, chan: asyncssh.SSHServerChannel):
         self._chan = cast(asyncssh.SSHLineEditorChannel, chan)
         self.writer = SSHChannelWriter(self._chan)
+        self.logger = logging.LoggerAdapter(
+            session_logger,
+            {"session_id": self.session_id},
+        )
 
     def connection_lost(self, exc):
         _ = exc
@@ -38,21 +44,20 @@ class SSHServerSession(asyncssh.SSHServerSession):
 
     def session_started(self):
         self.state = session_start(self)
+        self.state.event_queue.put_nowait(RenderEvent(self._width, self._height))
         self.session_main = asyncio.create_task(session_main(self))
 
     def data_received(self, data: str, datatype):
         _ = datatype
-        session_logger.debug(f"[SSH] Data received: {data!r}")
+        self.logger.debug(f"[SSH] Data received: {data!r}")
         if data and data.strip() in ("q", "\x03"):
-            self.state.event_queue.put_nowait(QuitEvent)
+            self.state.event_queue.put_nowait(QuitEvent())
 
         # Add input handler
 
     def terminal_size_changed(self, width, height, pixwidth, pixheight):
         """Handle terminal resize by updating the renderer and notifying the current page."""
         _, _ = pixwidth, pixheight
+        self._width = width
+        self._height = height
         self.state.event_queue.put_nowait(ResizeEvent(width=width, height=height))
-
-    def log(self, level: int, msg: str):
-        # Attach session_id to log record
-        session_logger.log(level, msg, extra={"session_id": self.session_id})

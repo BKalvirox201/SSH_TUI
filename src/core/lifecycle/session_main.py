@@ -4,7 +4,6 @@ import asyncio
 from typing import TYPE_CHECKING
 
 from src.core.lifecycle.session_stop import session_stop
-from src.core.logging import session_logger
 from src.events.global_event_handler import GlobalEventHandler
 from src.events.global_events import GlobalEvent, QuitEvent
 from src.events.page_events import PageEvent
@@ -31,4 +30,4 @@ async def session_main(session: SSHServerSession):
     except asyncio.CancelledError:
         pass
     except Exception as e:
-        session_logger.exception(f"Event loop exception: {e}")
+        session.state.logger.exception(f"Event loop exception: {e}")

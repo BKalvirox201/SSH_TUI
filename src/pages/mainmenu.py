@@ -12,23 +12,17 @@ class MainMenu(Page):
     def __init__(self) -> None:
         super().__init__()
         self.layout = Layout(name="root")
-        self.layout.split(
-            Layout(name="body", ratio=1),
-        )
-
-        self.layout["body"].split(
-            Layout(name="center", ratio=1),
-        )
 
     def render(self, ctx: RenderContext) -> Layout:
         size_text = f"{ctx.width} x {ctx.height}"
         panel_content = Align.center(size_text, vertical="middle")
         center_panel = Panel(
             panel_content,
+            title="MainMenu",
             border_style="primary",
-            padding=(1, 2),
+            padding=(0, 0),
         )
-        self.layout["body"]["center"].update(center_panel)
+        self.layout["root"].update(center_panel)
 
         return self.layout
 

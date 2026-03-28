@@ -6,9 +6,6 @@ from typing import TYPE_CHECKING
 from rich.theme import Theme
 
 from src.core.session_state import SessionState
-from src.events.global_events import (
-    RenderEvent,
-)
 from src.pages.mainmenu import MainMenu
 from src.pages.page import Page
 from src.renderer.renderer import Renderer
@@ -53,7 +50,6 @@ def session_start(session: SSHServerSession) -> SessionState:
 
     # Event queue
     event_queue: asyncio.Queue = asyncio.Queue()
-    event_queue.put_nowait(RenderEvent())
 
     # Initialize SessionState
     return SessionState(
@@ -62,4 +58,5 @@ def session_start(session: SSHServerSession) -> SessionState:
         page_data=page_data,
         renderer=renderer,
         event_queue=event_queue,
+        logger=session.logger,
     )

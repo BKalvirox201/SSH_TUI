@@ -11,6 +11,7 @@ class Renderer:
         self.writer = writer
         self.current_theme: Theme
         self.console = Console(
+            file=writer,
             force_terminal=True,
             color_system="truecolor",
             record=True,
@@ -22,8 +23,10 @@ class Renderer:
         recorded_tui = self.console.export_text(clear=True, styles=True)[:-2]
         self.writer.write_tui(recorded_tui)
 
-    def resize_console(self, width: int, height: int):
+    def resize_page_width(self, width: int):
         self.console.width = width
+
+    def resize_page_height(self, height: int):
         self.console.height = height
 
     def create_render_context(self) -> RenderContext:

@@ -5,12 +5,6 @@ class GlobalEvent:
     pass
 
 
-class ResizeEvent(GlobalEvent):
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
-
-
 class ChangeCurrentPageEvent(GlobalEvent):
     def __init__(self, new_page_name: str) -> None:
         self.new_page_name = new_page_name
@@ -26,7 +20,15 @@ class UpdateThemeEvent(GlobalEvent):
 
 
 class RenderEvent(GlobalEvent):
-    pass
+    def __init__(self, width: int | None, height: int | None):
+        self.width = width
+        self.height = height
+
+
+class ResizeEvent(GlobalEvent):
+    def __init__(self, width: int, height: int):
+        self.width = width
+        self.height = height
 
 
 class InputEvent:

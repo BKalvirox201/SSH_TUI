@@ -1,0 +1,79 @@
+# ----------------------------------------
+# Project metadata (optional)
+# ----------------------------------------
+[project]
+name = "your-project-name"
+version = "0.1.0"
+requires-python = ">=3.10"
+
+# ----------------------------------------
+# Ruff configuration
+# ----------------------------------------
+[tool.ruff]
+# Basic settings
+line-length = 88             # Matches Black-like default
+target-version = "py314"     # Your minimum supported Python
+respect-gitignore = true     # Ignore what gitignore says
+exclude = [
+  ".git",
+  ".venv",
+  "venv",
+  "__pycache__",
+  "build",
+  "dist",
+]
+
+# Enable fixable rules
+fixable = ["ALL"]
+
+# ----------------------------------------
+# Linting rules
+# ----------------------------------------
+[tool.ruff.lint]
+# Enable categories of rules
+select = [
+  "E",    # pycodestyle errors
+  "F",    # pyflakes
+  "I",    # isort-style import sorting
+  "B",    # bugbear (common bugs)
+  "C4",   # comprehensions
+  "UP",   # pyupgrade
+  "N",    # naming conventions
+  "SIM",  # simplifications
+  "RET",  # return improvements
+  "ARG",  # unused arguments
+  "PTH",  # pathlib usage
+  "RUF",  # Ruff-specific
+]
+
+ignore = [
+  "E501",  # line-too-long handled by formatter
+  "B008",  # function calls in defaults
+  "N802",  # naming style (optional)
+  "N803",
+  "N806",
+]
+
+# Per-file ignoring
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]   # allow unused imports for exports
+"tests/*" = ["ARG", "S101"]  # allow certain rules in tests
+
+# ----------------------------------------
+# Import sorting settings
+# ----------------------------------------
+[tool.ruff.lint.isort]
+known-first-party = ["src"]  # your local package names
+combine-as-imports = true
+force-sort-within-sections = true
+
+# Optional: additional isort-like options
+# known-third-party = ["django", "requests"]  # treat specific names as third-party
+
+# ----------------------------------------
+# Formatting settings
+# ----------------------------------------
+[tool.ruff.format]
+quote-style = "double"      # use double quotes
+indent-style = "space"
+line-ending = "auto"

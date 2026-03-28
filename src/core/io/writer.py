@@ -1,10 +1,12 @@
 import contextlib
-from asyncssh import SSHServerChannel
+
+from asyncssh import SSHLineEditorChannel
+
 
 class SSHChannelWriter:
     """Wrap an asyncssh channel and provide helper methods for terminal actions."""
 
-    def __init__(self, chan: SSHServerChannel):
+    def __init__(self, chan: SSHLineEditorChannel):
         self._chan = chan
 
     def write(self, data: str):
@@ -50,4 +52,3 @@ class SSHChannelWriter:
         """Enable/disable echo on the SSH channel."""
         with contextlib.suppress(Exception):
             self._chan.set_echo(enabled)
-

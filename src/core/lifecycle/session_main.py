@@ -4,22 +4,26 @@ import asyncio
 from typing import TYPE_CHECKING
 
 from src.core.lifecycle.session_stop import session_stop
+from src.events.exit_events import QuitEvent, SessionCloseEvent
 from src.events.global_event_handler import GlobalEventHandler
-from src.events.global_events import GlobalEvent, QuitEvent
+from src.events.global_events import GlobalEvent
 from src.events.page_events import PageEvent
 
 if TYPE_CHECKING:
-    from src.core.session import SSHServerSession
+    from src.core.session.session import SSHServerSession
 
 
 async def session_main(session: SSHServerSession):
     try:
         while True:
             event = await session.state.event_queue.get()
-            if isinstance(event, QuitEvent):
-                a = asyncio.create_task(session_stop(session))
-                _ = a
-            elif isinstance(event, GlobalEvent):
+            if isinstance(event, SessionCloseEvent):
+                if isinstance(event, QuitEvent):
+                    session.logger.info("Session Closed By User")
+                await session_stop(session)
+                break
+
+            if isinstance(event, GlobalEvent):
                 GlobalEventHandler.handle_event(event, session.state)
             elif isinstance(event, PageEvent):
                 current_page = session.state.pages[session.state.current_page]

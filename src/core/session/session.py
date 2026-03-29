@@ -10,17 +10,21 @@ from src.core.lifecycle.session_main import session_main
 from src.core.lifecycle.session_start import session_start
 from src.core.lifecycle.session_stop import session_stop
 from src.core.logging import session_logger
+from src.core.session.session_manager import SSHSessionManager
+from src.events.exit_events import QuitEvent
 from src.events.global_events import (
-    QuitEvent,
     RenderEvent,
     ResizeEvent,
 )
 
 
 class SSHServerSession(asyncssh.SSHServerSession):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, session_manager: SSHSessionManager, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.session_id = str(uuid.uuid4())
+        self.session_manager = session_manager
+        self._chan = None
+        self.session_main = None
 
     def connection_made(self, chan: asyncssh.SSHServerChannel):
         self._chan = cast(asyncssh.SSHLineEditorChannel, chan)
@@ -31,8 +35,20 @@ class SSHServerSession(asyncssh.SSHServerSession):
         )
 
     def connection_lost(self, exc):
-        _ = exc
-        asyncio.create_task(session_stop(self))
+        """
+        Called when the SSH channel is closed or lost.
+        exc will be None if the connection was closed cleanly,
+        or an exception if it was aborted.
+        """
+        assert self.session_main
+        if exc:
+            self.logger.warning(f"Connection lost: {exc}")
+        else:
+            self.logger.info("Connection closed cleanly")
+
+        # Schedule session cleanup
+        if hasattr(self, "session_main") and not self.session_main.done():
+            asyncio.create_task(session_stop(self))
 
     def pty_requested(self, term_type, term_size, term_modes):
         _, _ = term_type, term_modes
@@ -45,6 +61,7 @@ class SSHServerSession(asyncssh.SSHServerSession):
     def session_started(self):
         self.state = session_start(self)
         self.state.event_queue.put_nowait(RenderEvent(self._width, self._height))
+        self.session_manager.add(self)
         self.session_main = asyncio.create_task(session_main(self))
 
     def data_received(self, data: str, datatype):

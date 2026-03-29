@@ -5,13 +5,13 @@ from typing import TYPE_CHECKING
 
 from rich.theme import Theme
 
-from src.core.session_state import SessionState
+from src.core.session.session_state import SessionState
 from src.pages.mainmenu import MainMenu
 from src.pages.page import Page
 from src.renderer.renderer import Renderer
 
 if TYPE_CHECKING:
-    from src.core.session import SSHServerSession
+    from src.core.session.session import SSHServerSession
 
 
 def session_start(session: SSHServerSession) -> SessionState:

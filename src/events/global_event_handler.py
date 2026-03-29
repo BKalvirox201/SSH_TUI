@@ -1,4 +1,4 @@
-from src.core.session_state import SessionState
+from src.core.session.session_state import SessionState
 from src.events.global_events import (
     ChangeCurrentPageEvent,
     GlobalEvent,

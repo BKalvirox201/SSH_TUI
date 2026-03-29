@@ -29,14 +29,3 @@ class ResizeEvent(GlobalEvent):
     def __init__(self, width: int, height: int):
         self.width = width
         self.height = height
-
-
-class InputEvent:
-    """Wraps raw input data as an event."""
-
-    def __init__(self, data: str):
-        self.data = data
-
-
-class QuitEvent:
-    pass

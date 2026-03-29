@@ -4,14 +4,18 @@ import signal
 import asyncssh
 
 from src.core.logging import server_logger
-from src.core.session import SSHServerSession
+from src.core.session.session import SSHServerSession
+from src.core.session.session_manager import SSHSessionManager
 
 
-class MySSHServer(asyncssh.SSHServer):
-    def session_requested(self) -> asyncssh.SSHServerSession:
-        return SSHServerSession()
+class SSHServer(asyncssh.SSHServer):
+    def __init__(self):
+        self.session_manager = SSHSessionManager()
 
-    def begin_auth(self, username: str) -> bool:
+    def session_requested(self):
+        return SSHServerSession(self.session_manager)
+
+    def begin_auth(self, username):
         return False
 
 
@@ -22,7 +26,7 @@ async def start_server():
     """
     server_logger.info("SSH server starting on port 8022")
     return await asyncssh.create_server(
-        MySSHServer,
+        SSHServer,
         "",
         8022,
         server_host_keys=["ssh/ssh_host_key"],
@@ -30,23 +34,32 @@ async def start_server():
 
 
 async def main():
-    # Event to wait for shutdown signal
-    stop_event = asyncio.Event()
-    loop = asyncio.get_running_loop()
 
-    # Register signals
+    stop_event = asyncio.Event()
+
+    loop = asyncio.get_running_loop()
     loop.add_signal_handler(signal.SIGINT, stop_event.set)
     loop.add_signal_handler(signal.SIGTERM, stop_event.set)
 
-    server = await start_server()
-    server_logger.info("Server running. Press Ctrl-C to stop.")
+    # Explicitly create a server factory and keep a reference
+    server_factory = SSHServer()
+    listener = await asyncssh.create_server(
+        lambda: server_factory,
+        host="0.0.0.0",
+        port=8022,
+        server_host_keys=["./ssh/ssh_host_key"],
+    )
 
+    server_logger.info("Server running... Press Ctrl-C to stop")
     await stop_event.wait()
-    server_logger.info("Shutting down server...")
-    server.close()
 
-    await server.wait_closed()
-    server_logger.info("Server stopped by user")
+    server_logger.info("Shutting down sessions...")
+    await server_factory.session_manager.close_all_sessions()
+
+    server_logger.info("Closing listener...")
+    listener.close()
+    await listener.wait_closed()
+    server_logger.info("Server stopped.")
 
 
 if __name__ == "__main__":

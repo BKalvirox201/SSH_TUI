@@ -33,7 +33,7 @@ class MainMenu(Page):
             expand=True,
         )
         self.layout["body"].update(body_panel)
-        # --- Footer (true 1-line status bar) ---
+
         footer_text = Text()
         footer_text.append("Left text", style="bold")
         footer_text.append(" " * (ctx.width - len("Left text") - len("Right text")))

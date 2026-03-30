@@ -34,7 +34,6 @@ async def start_server():
 
 
 async def main():
-
     stop_event = asyncio.Event()
 
     loop = asyncio.get_running_loop()
@@ -52,10 +51,8 @@ async def main():
 
     server_logger.info("Server running... Press Ctrl-C to stop")
     await stop_event.wait()
-
     server_logger.info("Shutting down sessions...")
     await server_factory.session_manager.close_all_sessions()
-
     server_logger.info("Closing listener...")
     listener.close()
     await listener.wait_closed()

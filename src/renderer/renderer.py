@@ -23,10 +23,10 @@ class Renderer:
         recorded_tui = self.console.export_text(clear=True, styles=True)[:-2]
         self.writer.write_tui(recorded_tui)
 
-    def resize_page_width(self, width: int):
+    def resize_pagewidth(self, width: int):
         self.console.width = width
 
-    def resize_page_height(self, height: int):
+    def resize_pageheight(self, height: int):
         self.console.height = height
 
     def create_render_context(self) -> RenderContext:

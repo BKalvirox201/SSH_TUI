@@ -16,7 +16,7 @@ from src.events.global_events import (
     RenderEvent,
     ResizeEvent,
 )
-
+from src.events.page_events import NavDirectionEnum as NavEnum, NavEvent 
 
 class SSHServerSession(asyncssh.SSHServerSession):
     def __init__(self, session_manager: SSHSessionManager, *args, **kwargs):
@@ -52,7 +52,7 @@ class SSHServerSession(asyncssh.SSHServerSession):
 
     def pty_requested(self, term_type, term_size, term_modes):
         _, _ = term_type, term_modes
-        self._width, self._height, _, _ = term_size
+        self.width, self.height, _, _ = term_size
         return True
 
     def shell_requested(self) -> bool:
@@ -60,21 +60,33 @@ class SSHServerSession(asyncssh.SSHServerSession):
 
     def session_started(self):
         self.state = session_start(self)
-        self.state.event_queue.put_nowait(RenderEvent(self._width, self._height))
+        self.state.event_queue.put_nowait(RenderEvent(self.width, self.height))
         self.session_manager.add(self)
         self.session_main = asyncio.create_task(session_main(self))
 
     def data_received(self, data: str, datatype):
         _ = datatype
         self.logger.debug(f"[SSH] Data received: {data!r}")
+
+        # We need to handle capslock here maybe
         if data and data.strip() in ("q", "\x03"):
             self.state.event_queue.put_nowait(QuitEvent())
 
-        # Add input handler
+        if data and data.strip() in ("w", "k"):
+            self.state.event_queue.put_nowait(NavEvent(NavEnum.NORTH))
+        if data and data.strip() in ("a", "h"):
+            self.state.event_queue.put_nowait(NavEvent(NavEnum.EAST))
+        if data and data.strip() in ("s", "j"):
+            self.state.event_queue.put_nowait(NavEvent(NavEnum.SOUTH))
+        if data and data.strip() in ("d", "l"):
+            self.state.event_queue.put_nowait(NavEvent(NavEnum.WEST))
+
+        # enter = select
+        # maybe we need to worry about typing in long form inputs.. #TODO
 
     def terminal_size_changed(self, width, height, pixwidth, pixheight):
         """Handle terminal resize by updating the renderer and notifying the current page."""
         _, _ = pixwidth, pixheight
-        self._width = width
-        self._height = height
+        self.width = width
+        self.height = height
         self.state.event_queue.put_nowait(ResizeEvent(width=width, height=height))

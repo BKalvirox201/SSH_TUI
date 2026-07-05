@@ -6,6 +6,9 @@ from src.events.page_events import PageEvent
 from src.renderer.render_context import RenderContext
 
 
+class PageData:
+    pass
+
 class Page:
     @abstractmethod
     def render(self, ctx: RenderContext) -> Layout:

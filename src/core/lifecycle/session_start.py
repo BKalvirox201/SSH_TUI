@@ -7,6 +7,7 @@ from rich.theme import Theme
 
 from src.core.session.session_state import SessionState
 from src.pages.mainmenu import MainMenu
+from src.pages.test_page import TestPage
 from src.pages.page import Page
 from src.renderer.renderer import Renderer
 
@@ -28,7 +29,7 @@ def session_start(session: SSHServerSession) -> SessionState:
 
     # Pages
     pages: dict[str, Page] = {
-        "MainMenu": MainMenu(),
+        "Test": TestPage(),
         # Add more pages here as needed
     }
     page_data = {page_name: {} for page_name in pages}

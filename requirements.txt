@@ -3,3 +3,4 @@ rich
 bcrypt
 asyncio
 uuid
+pyfiglet

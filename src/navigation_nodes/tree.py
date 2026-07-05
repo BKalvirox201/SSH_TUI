@@ -10,7 +10,7 @@ class NodeLinkDirection(Enum):
 
 class TreeNode:
     def __init__(self) -> None:
-        self.parent: TreeNode | None = None
+        self.parent_container: NodeContainer | None = None
         self.north: TreeNode | None = None
         self.east: TreeNode | None = None
         self.south: TreeNode | None = None
@@ -45,8 +45,10 @@ class TreeNode:
         elif self.west is target:
             self.west = None
 
-    def get_parent(self) -> TreeNode | None:
-        return self.parent
+    def exit_parent_container(self) -> NodeContainer | None:
+        if self.parent_container:
+            self.parent_container.last_selected_child = self
+        return self.parent_container
 
     def walk(self, direction: NodeLinkDirection) -> TreeNode:
         match direction:
@@ -58,6 +60,24 @@ class TreeNode:
                 return self.south or self
             case NodeLinkDirection.West:
                 return self.west or self
+
+
+class NodeContainer(TreeNode):
+    def __init__(self) -> None:
+        super().__init__()
+        self.last_selected_child: TreeNode | None = None
+        self.children: list[TreeNode] = []
+
+    def add(self, node: TreeNode):
+        node.parent = self
+        self.children.append(node)
+
+    def remove(self, node: TreeNode):
+        node.parent = None
+        self.children.remove(node)
+
+    def enter(self) -> TreeNode:
+        return self.last_selected_child or self.children[0]
 
 
 # TestWidget
@@ -105,29 +125,6 @@ class Widget(TreeNode):
             return pairs
 
         _ = __print_descending(pairs, depth, self)
-
-
-class NodeContainer(TreeNode):
-    def __init__(self) -> None:
-        super().__init__()
-        self.last_selected_child: TreeNode | None = None
-        self.children: list[TreeNode] = []
-
-    def add(self, node: TreeNode):
-        node.parent = self
-        self.children.append(node)
-
-    def remove(self, node: TreeNode):
-        node.parent = None
-        self.children.remove(node)
-
-    def walk_to_child(self, node: TreeNode | None) -> TreeNode | None:
-        if node:
-            if node in self.children:
-                return node
-        # elif maybe error
-
-        return self.last_selected_child
 
 
 if __name__ == "__main__":

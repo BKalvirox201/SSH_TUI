@@ -18,9 +18,9 @@ class NavNode:
         self.east: NavNode = self
         self.south: NavNode = self
         self.west: NavNode = self
-        self.children: list[NavNode] = (
-            []
-        )  # every node is also a container, layout nesting has to be done at another level
+        self.children: list[
+            NavNode
+        ] = []  # every node is also a container, layout nesting has to be done at another level
 
         self.owner: Widget = owner
 
@@ -102,8 +102,8 @@ class Widget:
 
 
 class Cursor:
-    def __init__(self, starting_widget: Widget) -> None:
-        self.focused_widget: Widget = starting_widget
+    def __init__(self, start: Widget) -> None:
+        self.focused: Widget = start
         # self.history: list[]  # Could be cool, make it using a ring buffer
 
         # This is a bit silly being here, since there is only ever 1 cursor made by the user
@@ -120,30 +120,30 @@ class Cursor:
         node: NavNode
         match direction:
             case NavDirection.North:
-                node = self.focused_widget.node.north
+                node = self.focused.node.north
             case NavDirection.East:
-                node = self.focused_widget.node.east
+                node = self.focused.node.east
             case NavDirection.South:
-                node = self.focused_widget.node.south
+                node = self.focused.node.south
             case NavDirection.West:
-                node = self.focused_widget.node.west
+                node = self.focused.node.west
             case NavDirection.Parent:
-                if self.focused_widget.node.parent.owner is not self.focused_widget:
-                    self.last_selected_child_history[
-                        self.focused_widget.node.parent
-                    ] = self.focused_widget.node
-                node = self.focused_widget.node.parent
+                if self.focused.node.parent.owner is not self.focused:
+                    self.last_selected_child_history[self.focused.node.parent] = (
+                        self.focused.node
+                    )
+                node = self.focused.node.parent
             case NavDirection.Children:
-                if self.focused_widget.node in self.last_selected_child_history:
-                    node = self.last_selected_child_history[self.focused_widget.node]
-                elif len(self.focused_widget.node.children) > 0:
-                    node = self.focused_widget.node.children[0]
+                if self.focused.node in self.last_selected_child_history:
+                    node = self.last_selected_child_history[self.focused.node]
+                elif len(self.focused.node.children) > 0:
+                    node = self.focused.node.children[0]
                 else:
-                    node = self.focused_widget.node
-        self.focused_widget = node.owner
+                    node = self.focused.node
+        self.focused = node.owner
 
     def print_selected(self) -> None:
-        print(self.focused_widget)
+        print(self.focused)
 
     def print_descending(self) -> None:
         widgets: set[Widget] = set()
@@ -152,41 +152,29 @@ class Cursor:
             widgets.add(starting_widget)
             cursor = Cursor(starting_widget)
 
-            if (
-                cursor.focused_widget.node.parent
-                and cursor.focused_widget.node.parent.owner_widget not in widgets
-            ):
-                widgets.add(cursor.focused_widget.node.parent.owner_widget)
-            if (
-                cursor.focused_widget.node.north
-                and cursor.focused_widget.node.north.owner_widget not in widgets
-            ):
-                widgets.add(cursor.focused_widget.node.north.owner_widget)
-                __collect(cursor.focused_widget.node.north.owner_widget)
-            if (
-                cursor.focused_widget.node.east
-                and cursor.focused_widget.node.east.owner_widget not in widgets
-            ):
-                widgets.add(cursor.focused_widget.node.east.owner_widget)
-                __collect(cursor.focused_widget.node.east.owner_widget)
-            if (
-                cursor.focused_widget.node.south
-                and cursor.focused_widget.node.south.owner_widget not in widgets
-            ):
-                widgets.add(cursor.focused_widget.node.south.owner_widget)
-                __collect(cursor.focused_widget.node.south.owner_widget)
-            if (
-                cursor.focused_widget.node.west
-                and cursor.focused_widget.node.west.owner_widget not in widgets
-            ):
-                widgets.add(cursor.focused_widget.node.west.owner_widget)
-                __collect(cursor.focused_widget.node.west.owner_widget)
-            for child in cursor.focused_widget.node.children:
-                if child not in widgets:
-                    widgets.add(child.owner_widget)
-                    __collect(child.owner_widget)
+            # Hopefully, there is a world where this doesn't consume RAM
+            fnode = cursor.focused.node
 
-        __collect(self.focused_widget)
+            if fnode.parent and fnode.parent.owner not in widgets:
+                widgets.add(fnode.parent.owner)
+            if fnode.north and fnode.north.owner not in widgets:
+                widgets.add(fnode.north.owner)
+                __collect(fnode.north.owner)
+            if fnode.east and fnode.east.owner not in widgets:
+                widgets.add(fnode.east.owner)
+                __collect(fnode.east.owner)
+            if fnode.south and fnode.south.owner not in widgets:
+                widgets.add(fnode.south.owner)
+                __collect(fnode.south.owner)
+            if fnode.west and fnode.west.owner not in widgets:
+                widgets.add(fnode.west.owner)
+                __collect(fnode.west.owner)
+            for child in fnode.children:
+                if child not in widgets:
+                    widgets.add(child.owner)
+                    __collect(child.owner)
+
+        __collect(self.focused)
 
         for widget in sorted(widgets, key=lambda w: w.value):
             print(widget)
@@ -226,35 +214,35 @@ if __name__ == "__main__":
     cursor.walk(NavDirection.East)
     cursor.walk(NavDirection.West)
     cursor.walk(NavDirection.West)
-    assert cursor.focused_widget.value == "e"
+    assert cursor.focused.value == "e"
 
     # Shouldn't be able to go anywhere it's not linked to
     cursor.walk(NavDirection.North)
     cursor.walk(NavDirection.South)
     cursor.walk(NavDirection.West)
     cursor.walk(NavDirection.Parent)
-    assert cursor.focused_widget.value == "e"
+    assert cursor.focused.value == "e"
     assert len(cursor.last_selected_child_history) == 0, print(
         cursor.last_selected_child_history
     )
 
     # Walk down to children
     cursor.walk(NavDirection.Children)
-    assert cursor.focused_widget.value == "f"
+    assert cursor.focused.value == "f"
 
     # Walk around and then back up
     cursor.walk(NavDirection.West)
     cursor.walk(NavDirection.North)
     cursor.walk(NavDirection.Parent)
-    assert cursor.focused_widget.value == "e"
+    assert cursor.focused.value == "e"
 
     # Walk down again and we should land on the one we came up on
     cursor.walk(NavDirection.Children)
-    assert cursor.focused_widget.value == "h"
+    assert cursor.focused.value == "h"
 
     # Once more for luck
     cursor.walk(NavDirection.South)
     cursor.walk(NavDirection.Parent)
     cursor.walk(NavDirection.Children)
-    assert cursor.focused_widget.value == "f"
+    assert cursor.focused.value == "f"
     cursor.print_descending()

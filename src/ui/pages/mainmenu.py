@@ -5,10 +5,10 @@ from rich.align import Align
 from rich.layout import Layout
 from rich.panel import Panel
 
-from src.pages.page import Page
-from src.pages.panels.footer import Footer
-from src.pages.panels.header import Header
 from src.renderer.render_context import RenderContext
+from src.ui.pages.page import Page
+from src.ui.pages.panels.footer import Footer
+from src.ui.pages.panels.header import Header
 
 
 class MainMenu(Page):

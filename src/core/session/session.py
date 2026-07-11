@@ -16,7 +16,8 @@ from src.events.global_events import (
     RenderEvent,
     ResizeEvent,
 )
-from src.events.page_events import NavDirectionEnum as NavEnum, NavEvent 
+from src.events.page_events import NavDirectionEnum as NavEnum, NavEvent
+
 
 class SSHServerSession(asyncssh.SSHServerSession):
     def __init__(self, session_manager: SSHSessionManager, *args, **kwargs):
@@ -48,6 +49,7 @@ class SSHServerSession(asyncssh.SSHServerSession):
 
         # Schedule session cleanup
         if hasattr(self, "session_main") and not self.session_main.done():
+            # TODO: Work out how to mute RUFF warnings
             asyncio.create_task(session_stop(self))
 
     def pty_requested(self, term_type, term_size, term_modes):
@@ -67,6 +69,8 @@ class SSHServerSession(asyncssh.SSHServerSession):
     def data_received(self, data: str, datatype):
         _ = datatype
         self.logger.debug(f"[SSH] Data received: {data!r}")
+
+        # TODO: Move to input handler
 
         # We need to handle capslock here maybe
         if data and data.strip() in ("q", "\x03"):

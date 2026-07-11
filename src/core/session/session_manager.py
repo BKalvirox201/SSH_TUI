@@ -25,7 +25,7 @@ class SSHSessionManager:
 
     async def close_all_sessions(self, timeout: float = 5.0):
         """Signal all sessions to close, wait up to `timeout` seconds."""
-        # Broadcast event
+        # TODO: Create a stand-alone broadcast function and then have this one as well which calls it
         for session in self.sessions:
             session.state.event_queue.put_nowait(SessionCloseEvent())
 

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from src.core.lifecycle.session_stop import session_stop
 from src.events.exit_events import QuitEvent, SessionCloseEvent
-from src.events.global_events import RenderEvent, ResizeEvent, ChangeCurrentPageEvent
+from src.events.global_events import ChangeCurrentPageEvent, RenderEvent, ResizeEvent
 from src.events.page_events import NavEvent
 
 if TYPE_CHECKING:
@@ -22,8 +22,10 @@ async def session_main(session: SSHServerSession):
                 await session_stop(session)
                 break
 
-            elif isinstance(event, ResizeEvent):
-                session.state.event_queue.put_nowait(RenderEvent(event.width, event.height))
+            if isinstance(event, ResizeEvent):
+                session.state.event_queue.put_nowait(
+                    RenderEvent(event.width, event.height)
+                )
 
             elif isinstance(event, RenderEvent):
                 if event.width:
@@ -48,9 +50,7 @@ async def session_main(session: SSHServerSession):
 
             session.state.event_queue.put_nowait(
                 RenderEvent(session.width, session.height)
-                )
-                
-                
+            )
 
     except asyncio.CancelledError:
         pass

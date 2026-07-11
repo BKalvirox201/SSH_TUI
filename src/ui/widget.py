@@ -24,5 +24,5 @@ class Widget(Panel):
 
     @abstractmethod
     def activate(self):
-        # NOTE: This is probably going to want to take some page/session data as an arg
+        # TODO: This is probably going to want to take some page/session data as an arg
         pass

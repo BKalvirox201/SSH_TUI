@@ -1,5 +1,3 @@
-from abc import abstractmethod
-
 from navigation_nodes import NavDirection, NavNode
 from rich.panel import Panel
 
@@ -21,8 +19,3 @@ class Widget(Panel):
 
     def disconnect(self, widget: Widget):
         self.node.disconnect(widget.node)
-
-    @abstractmethod
-    def activate(self):
-        # TODO: This is probably going to want to take some page/session data as an arg
-        pass

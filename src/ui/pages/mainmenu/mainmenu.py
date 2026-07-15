@@ -8,7 +8,8 @@ from rich.panel import Panel
 from src.renderer.render_context import RenderContext
 from src.ui.pages.page import Page
 from src.ui.pages.panels.footer import Footer
-from src.ui.pages.panels.header import Header
+
+# from src.ui.pages.panels.header import Header
 
 
 class MainMenu(Page):
@@ -17,16 +18,15 @@ class MainMenu(Page):
 
         self.layout = Layout(name="root")
         self.layout.split_column(
-            Layout(name="header", size=6),
+            #  Layout(name="header", size=6),
             Layout(name="body"),
             Layout(name="footer", size=1),
         )
 
     @override
     def render(self, ctx: RenderContext) -> Layout:
-
-        header = Header(title="Coffee", font="ansi_shadow")
-        self.layout["header"].update(header.render(ctx))
+        # header = Header(title="Coffee", font="ansi_shadow")
+        # self.layout["header"].update(header.render(ctx))
 
         size_text = f"{ctx.width} x {ctx.height}"
 

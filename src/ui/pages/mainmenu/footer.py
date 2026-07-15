@@ -1,26 +1,32 @@
+from typing import override
+
 from rich.text import Text
 
+from src.render import RenderContext
+from src.ui.widgets.widget import Widget
 
-class Footer:
+
+class Footer(Widget):
     def __init__(self, left: str, right: str, style: str = "bold"):
         self.left = left
         self.right = right
         self.style = style
 
-    def render(self, width: int) -> Text:
+    @override
+    def render(self, ctx: RenderContext) -> Text:
         text = Text()
-        available = max(0, width - len(self.left) - len(self.right))
+        available = max(0, ctx.width - len(self.left) - len(self.right))
 
         if available == 0:
-            half = width // 2
+            half = ctx.width // 2
             left = self.left[:half]
-            right = self.right[: width - len(left)]
+            right = self.right[: ctx.width - len(left)]
         else:
             left = self.left
             right = self.right
 
         text.append(left, style=self.style)
-        text.append(" " * max(1, width - len(left) - len(right)))
+        text.append(" " * max(1, ctx.width - len(left) - len(right)))
         text.append(right, style=self.style)
 
         return text

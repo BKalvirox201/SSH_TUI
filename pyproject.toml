@@ -23,9 +23,6 @@ exclude = [
   "dist",
 ]
 
-# Enable fixable rules
-fixable = ["ALL"]
-
 # ----------------------------------------
 # Linting rules
 # ----------------------------------------
@@ -45,6 +42,9 @@ select = [
   "PTH",  # pathlib usage
   "RUF",  # Ruff-specific
 ]
+
+# Enable fixable rules
+fixable = ["ALL"]
 
 ignore = [
   "E501",  # line-too-long handled by formatter

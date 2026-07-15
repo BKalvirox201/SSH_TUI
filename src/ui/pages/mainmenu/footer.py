@@ -6,6 +6,7 @@ from renderer.render_context import RenderContext
 from ui.widgets.widget import Widget
 
 
+# NOTE: Lets move this to the widgets section
 class Footer(Widget):
     def __init__(self, left: str, right: str, style: str = "bold"):
         super().__init__()

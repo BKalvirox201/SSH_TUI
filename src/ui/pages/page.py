@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 
 from rich.layout import Layout
 
-from src.events.page_events import PageEvent
-from src.renderer.render_context import RenderContext
+from events.page_events import PageEvent
+from renderer.render_context import RenderContext
 
 
 class PageData:

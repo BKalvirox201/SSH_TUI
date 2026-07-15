@@ -61,6 +61,7 @@ async def session_main(session: SSHServerSession):
                     RenderEvent(session.width, session.height)
                 )
 
+    # TODO: Do we still need this?
     except asyncio.CancelledError:
         pass
     except Exception as e:

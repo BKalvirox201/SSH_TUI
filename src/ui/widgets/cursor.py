@@ -1,7 +1,4 @@
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from widget import NavDirection, Widget
+from widget import NavDirection, Widget
 
 
 class Cursor:
@@ -16,31 +13,29 @@ class Cursor:
         self.last_selected_child_history: dict[Widget, Widget] = {}
 
     def walk(self, direction: NavDirection) -> None:
-        next: Widget
+        next_widget: Widget
         match direction:
             case NavDirection.North:
-                next = self.focused.north
+                next_widget = self.focused.north
             case NavDirection.East:
-                next = self.focused.east
+                next_widget = self.focused.east
             case NavDirection.South:
-                next = self.focused.south
+                next_widget = self.focused.south
             case NavDirection.West:
-                next = self.focused.west
+                next_widget = self.focused.west
             case NavDirection.Parent:
                 if self.focused.next.parent.owner is not self.focused:
                     self.last_selected_child_history[self.focused.next.parent] = (
                         self.focused.next
                     )
-                next = self.focused.parent
+                next_widget = self.focused.parent
             case NavDirection.Children:
                 if self.focused.next in self.last_selected_child_history:
-                    next = self.last_selected_child_history[self.focused]
+                    next_widget = self.last_selected_child_history[self.focused]
                 elif len(self.focused.next.children) > 0:
-                    next = self.focused.children[0]
+                    next_widget = self.focused.children[0]
                 else:
-                    next = self.focused
+                    next_widget = self.focused
 
-        if self.focused is not next:
-            self.focused.deselect()
-            self.focused = next
-            self.focused.select()
+        if self.focused is not next_widget:
+            self.focused = next_widget

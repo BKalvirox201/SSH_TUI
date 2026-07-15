@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING
 
-from src.core.logging import server_logger
-from src.events.exit_events import SessionCloseEvent
+from core.server_logging import server_logger
+from events.exit_events import SessionCloseEvent
 
 if TYPE_CHECKING:
-    from src.core.session.session import SSHServerSession
+    from core.session.session import SSHServerSession
 
 import asyncio
 

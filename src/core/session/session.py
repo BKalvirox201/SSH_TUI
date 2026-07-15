@@ -5,18 +5,19 @@ import uuid
 
 import asyncssh
 
-from src.core.io.writer import SSHChannelWriter
-from src.core.lifecycle.session_main import session_main
-from src.core.lifecycle.session_start import session_start
-from src.core.lifecycle.session_stop import session_stop
-from src.core.logging import session_logger
-from src.core.session.session_manager import SSHSessionManager
-from src.events.exit_events import QuitEvent
-from src.events.global_events import (
+from core.io.writer import SSHChannelWriter
+from core.lifecycle.session_main import session_main
+from core.lifecycle.session_start import session_start
+from core.lifecycle.session_stop import session_stop
+from core.server_logging import session_logger
+from core.session.session_manager import SSHSessionManager
+from events.exit_events import QuitEvent
+from events.global_events import (
     RenderEvent,
     ResizeEvent,
 )
-from src.events.page_events import NavDirectionEnum as NavEnum, NavEvent
+from events.page_events import NavEvent
+from ui.widgets.widget import NavDirection
 
 
 class SSHServerSession(asyncssh.SSHServerSession):
@@ -47,7 +48,6 @@ class SSHServerSession(asyncssh.SSHServerSession):
         else:
             self.logger.info("Connection closed cleanly")
 
-        # Schedule session cleanup
         if hasattr(self, "session_main") and not self.session_main.done():
             # TODO: Work out how to mute RUFF warnings
             asyncio.create_task(session_stop(self))
@@ -77,16 +77,16 @@ class SSHServerSession(asyncssh.SSHServerSession):
             self.state.event_queue.put_nowait(QuitEvent())
 
         if data and data.strip() in ("w", "k"):
-            self.state.event_queue.put_nowait(NavEvent(NavEnum.NORTH))
+            self.state.event_queue.put_nowait(NavEvent(NavDirection.North))
         if data and data.strip() in ("a", "h"):
-            self.state.event_queue.put_nowait(NavEvent(NavEnum.EAST))
+            self.state.event_queue.put_nowait(NavEvent(NavDirection.East))
         if data and data.strip() in ("s", "j"):
-            self.state.event_queue.put_nowait(NavEvent(NavEnum.SOUTH))
+            self.state.event_queue.put_nowait(NavEvent(NavDirection.South))
         if data and data.strip() in ("d", "l"):
-            self.state.event_queue.put_nowait(NavEvent(NavEnum.WEST))
+            self.state.event_queue.put_nowait(NavEvent(NavDirection.West))
 
         # enter = select
-        # maybe we need to worry about typing in long form inputs.. #TODO
+        # TODO: we need to worry about typing in long form inputs..
 
     def terminal_size_changed(self, width, height, pixwidth, pixheight):
         """Handle terminal resize by updating the renderer and notifying the current page."""

@@ -2,12 +2,13 @@ from typing import override
 
 from rich.text import Text
 
-from src.render import RenderContext
-from src.ui.widgets.widget import Widget
+from renderer.render_context import RenderContext
+from ui.widgets.widget import Widget
 
 
 class Footer(Widget):
     def __init__(self, left: str, right: str, style: str = "bold"):
+        super().__init__()
         self.left = left
         self.right = right
         self.style = style

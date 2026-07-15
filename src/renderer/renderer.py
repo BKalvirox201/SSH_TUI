@@ -1,9 +1,9 @@
+from render_context import RenderContext
 from rich.console import Console
 from rich.layout import Layout
 from rich.theme import Theme
 
-from src.core.io.writer import SSHChannelWriter
-from src.renderer.render_context import RenderContext
+from core.io.writer import SSHChannelWriter
 
 
 class Renderer:
@@ -31,7 +31,10 @@ class Renderer:
 
     def create_render_context(self) -> RenderContext:
         return RenderContext(
-            self.console.width, self.console.height, self.current_theme
+            self.console.width,
+            self.console.height,
+            False,  # NOTE: Maybe we need two types  of render context, global and page
+            self.current_theme,
         )
 
     def set_theme(self, new_theme: Theme):

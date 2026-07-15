@@ -1,0 +1,4 @@
+[MAIN]
+init-hook='import sys; sys.path.insert(0, "src")'
+[MESSAGES CONTROL]
+disable=fixme

@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 from rich.layout import Layout
 
@@ -10,7 +10,7 @@ class PageData:
     pass
 
 
-class Page:
+class Page(ABC):
     @abstractmethod
     def render(self, ctx: RenderContext) -> Layout:
         raise NotImplementedError

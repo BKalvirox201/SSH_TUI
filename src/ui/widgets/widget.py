@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import Enum
+from enum import Enum
 
-from rich.render import Renderable
+from rich.console import RenderableType
 
-from src.render import RenderContext
+from renderer.render_context import RenderContext
 
 
 class NavDirection(Enum):
@@ -25,13 +25,7 @@ class Widget(ABC):
         self.east: Widget = self
         self.south: Widget = self
         self.west: Widget = self
-        self.children: list[Widget] = []
-
-    def select(self):
-        self.highlight = True
-
-    def deselect(self):
-        self.highlight = False
+        self.children: list = []
 
     def connect(self, target: Widget, link_direction: NavDirection) -> None:
         assert target != self  # NOTE: cannot manually connect a node to itself
@@ -69,5 +63,8 @@ class Widget(ABC):
             self.children.remove(target)
 
     @abstractmethod
-    def render(self, ctx: RenderContext) -> Renderable:
+    def render(self, ctx: RenderContext) -> RenderableType:
         pass
+
+
+# TODO: Make derived widget types.. eg "clickable", rewrite button and checkbox to use these

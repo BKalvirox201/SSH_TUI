@@ -5,7 +5,7 @@ import contextlib
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from src.core.session.session import SSHServerSession
+    from core.session.session import SSHServerSession
 
 
 async def session_stop(session: SSHServerSession) -> None:

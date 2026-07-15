@@ -2,8 +2,8 @@ import asyncio
 from dataclasses import dataclass
 import logging
 
-from src.pages.page import Page
-from src.renderer.renderer import Renderer
+from renderer.renderer import Renderer
+from ui.pages.page import Page
 
 
 @dataclass

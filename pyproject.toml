@@ -2,7 +2,7 @@
 # Project metadata (optional)
 # ----------------------------------------
 [project]
-name = "your-project-name"
+name = "SSH_TUI"
 version = "0.1.0"
 requires-python = ">=3.10"
 

@@ -2,8 +2,6 @@ import asyncio
 from enum import Enum, auto
 import logging
 
-from src.events.global_events import InputEvent
-
 
 class InputMode(Enum):
     KEY_BY_KEY = auto()

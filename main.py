@@ -3,7 +3,7 @@ import signal
 
 import asyncssh
 
-from src.core.logging import server_logger
+from src.core.server_logging import server_logger
 from src.core.session.session import SSHServerSession
 from src.core.session.session_manager import SSHSessionManager
 

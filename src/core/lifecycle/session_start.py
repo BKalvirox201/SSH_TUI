@@ -5,13 +5,13 @@ from typing import TYPE_CHECKING
 
 from rich.theme import Theme
 
-from src.core.session.session_state import SessionState
-from src.renderer.renderer import Renderer
-from src.ui.pages.page import Page
-from src.ui.pages.test_page import TestPage
+from core.session.session_state import SessionState
+from renderer.renderer import Renderer
+from ui.pages.mainmenu.mainmenu import MainMenu
+from ui.pages.page import Page
 
 if TYPE_CHECKING:
-    from src.core.session.session import SSHServerSession
+    from core.session.session import SSHServerSession
 
 
 def session_start(session: SSHServerSession) -> SessionState:
@@ -28,7 +28,7 @@ def session_start(session: SSHServerSession) -> SessionState:
 
     # Pages
     pages: dict[str, Page] = {
-        "Test": TestPage(),
+        "Test": MainMenu(),
         # Add more pages here as needed
     }
     page_data = {page_name: {} for page_name in pages}

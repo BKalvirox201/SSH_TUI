@@ -11,15 +11,16 @@ from core.lifecycle.session_start import session_start
 from core.lifecycle.session_stop import session_stop
 from core.server_logging import session_logger
 from core.session.session_manager import SSHSessionManager
-from events.exit_events import QuitEvent
-from events.global_events import (
+from core.session.session_state import SessionState
+from events import (
+    NavEvent,
     RenderEvent,
-    ResizeEvent,
+    SessionClose,
 )
-from events.page_events import NavEvent
 from ui.widgets.widget import NavDirection
 
 
+# TODO: Session Start and Stop should be private functions of this class and stored in this file
 class SSHServerSession(asyncssh.SSHServerSession):
     def __init__(self, session_manager: SSHSessionManager, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -27,6 +28,11 @@ class SSHServerSession(asyncssh.SSHServerSession):
         self.session_manager = session_manager
         self._chan = None
         self.session_main = None
+        self.width: int = 0
+        self.height: int = 0
+        self.writer: SSHChannelWriter
+        self.logger: logging.LoggerAdapter
+        self.state: SessionState
 
     def connection_made(self, chan: asyncssh.SSHServerChannel):
         self._chan = cast(asyncssh.SSHLineEditorChannel, chan)
@@ -72,9 +78,11 @@ class SSHServerSession(asyncssh.SSHServerSession):
 
         # TODO: Move to input handler
 
-        # We need to handle capslock here maybe
+        data = data.lower()
         if data and data.strip() in ("q", "\x03"):
-            self.state.event_queue.put_nowait(QuitEvent())
+            self.state.event_queue.put_nowait(
+                SessionClose(exit_code=0, exit_message="Session closed by user")
+            )
 
         if data and data.strip() in ("w", "k"):
             self.state.event_queue.put_nowait(NavEvent(NavDirection.North))
@@ -93,4 +101,4 @@ class SSHServerSession(asyncssh.SSHServerSession):
         _, _ = pixwidth, pixheight
         self.width = width
         self.height = height
-        self.state.event_queue.put_nowait(ResizeEvent(width=width, height=height))
+        self.state.event_queue.put_nowait(RenderEvent(self.width, self.height))

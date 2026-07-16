@@ -2,6 +2,7 @@ from typing import override
 
 from rich.layout import Layout
 
+from events.page_events import ClickEvent, NavEvent, PageEvent
 from renderer.render_context import RenderContext
 from ui.pages.mainmenu.body import TestBody as Body
 from ui.pages.mainmenu.footer import Footer
@@ -9,11 +10,11 @@ from ui.pages.page import Page
 from ui.widgets.cursor import Cursor
 from ui.widgets.widget import NavDirection
 
-# from src.ui.pages.panels.header import Header
-
+from core.session.session import SSHServerSession
 
 class MainMenu(Page):
     def __init__(self) -> None:
+
         # Geometry
         self.layout = Layout(name="root")
         self.inner = Layout(name="inner_layout")
@@ -28,7 +29,6 @@ class MainMenu(Page):
         )
 
         self.layout.split_column(
-            # Layout(name="header", size=6),
             self.inner,
             Layout(name="footer", size=1),
         )
@@ -54,9 +54,9 @@ class MainMenu(Page):
 
     @override
     def render(self, ctx: RenderContext) -> Layout:
-        height_excl_footer = ctx.height - 1
-        half_height = height_excl_footer / 2
-        half_width = ctx.width / 2
+        height_excl_footer = int(ctx.height - 1)
+        half_height = int(height_excl_footer / 2)
+        half_width = int(ctx.width / 2)
 
         body_1_ctx = ctx.child(
             height=half_height,
@@ -82,5 +82,9 @@ class MainMenu(Page):
         return self.layout
 
     @override
-    def handle_event(self, event, state_data: dict):
-        pass
+    def handle_event(self, event: PageEvent):
+        if isinstance(event, NavEvent):
+            self.cursor.walk(NavEvent.direction)
+        if isinstance(event, ClickEvent) and isinstance(self.cursor.focused, ):
+
+            

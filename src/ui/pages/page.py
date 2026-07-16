@@ -16,7 +16,7 @@ class Page(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def handle_event(self, event: PageEvent, state_data: dict):
+    def handle_event(self, event: PageEvent):
         raise NotImplementedError
 
     @property

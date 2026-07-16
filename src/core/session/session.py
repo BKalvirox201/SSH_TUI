@@ -61,7 +61,7 @@ class SSHServerSession(asyncssh.SSHServerSession):
         return True
 
     def session_started(self):
-        self.state = session_start(self)
+        self.state = session_start(self)  # TODO: Merge this struct into session
         self.state.event_queue.put_nowait(RenderEvent(self.width, self.height))
         self.session_manager.add(self)
         self.session_main = asyncio.create_task(session_main(self))

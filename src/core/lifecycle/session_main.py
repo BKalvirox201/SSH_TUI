@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from core.lifecycle.session_stop import session_stop
 from events.exit_events import QuitEvent, SessionCloseEvent
-from events.global_events import ChangeCurrentPageEvent, RenderEvent, ResizeEvent
+from events.global_events import RenderEvent, ResizeEvent
 from events.page_events import PageEvent
 
 if TYPE_CHECKING:
@@ -39,23 +39,24 @@ async def session_main(session: SSHServerSession):
                     RenderEvent(session.width, session.height)
                 )
 
-            elif isinstance(event, ChangeCurrentPageEvent):
-                assert event.new_page_name in session.state.page_data
-                session.state[session.current_page.name] = (
-                    session.current_page.save_state()
-                )
-                session.state.current_page = event.new_page_name
-                session.state.current_page.load_state(
-                    session.state[session.current_page.name]
-                )
-                session.state.event_queue.put_nowait(
-                    RenderEvent(session.width, session.height)
-                )
+            # TODO: Revise this when we come to do this
+            # elif isinstance(event, ChangeCurrentPageEvent):
+            #     assert event.new_page_name in session.state.page_data
+            #     session.state[session.current_page.name] = (
+            #         session.current_page.save_state()
+            #     )
+            #     session.state.current_page = event.new_page_name
+            #     session.state.current_page.load_state(
+            #         session.state[session.current_page.name]
+            #     )
+            #     session.state.event_queue.put_nowait(
+            #         RenderEvent(session.width, session.height)
+            #     )
 
             elif isinstance(event, PageEvent):
                 current_page = session.state.pages[session.state.current_page]
                 current_page.handle_event(
-                    event, session.state.page_data[session.state.current_page]
+                    event, session.state.pages[session.state.current_page]
                 )
                 session.state.event_queue.put_nowait(
                     RenderEvent(session.width, session.height)

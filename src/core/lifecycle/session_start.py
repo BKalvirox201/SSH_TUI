@@ -28,10 +28,9 @@ def session_start(session: SSHServerSession) -> SessionState:
 
     # Pages
     pages: dict[str, Page] = {
-        "Test": MainMenu(),
+        "MainMenu": MainMenu(),
         # Add more pages here as needed
     }
-    page_data = {page_name: {} for page_name in pages}
 
     # Renderer and theme
     renderer = Renderer(session.writer)
@@ -55,7 +54,6 @@ def session_start(session: SSHServerSession) -> SessionState:
     return SessionState(
         current_page=next(iter(pages)),
         pages=pages,
-        page_data=page_data,
         renderer=renderer,
         event_queue=event_queue,
         logger=session.logger,

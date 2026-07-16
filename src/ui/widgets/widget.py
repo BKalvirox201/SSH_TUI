@@ -3,7 +3,9 @@ from enum import Enum
 
 from rich.console import RenderableType
 
+from core.session.session import SSHServerSession
 from renderer.render_context import RenderContext
+from ui.pages.page import Page
 
 
 class NavDirection(Enum):
@@ -64,6 +66,17 @@ class Widget(ABC):
 
     @abstractmethod
     def render(self, ctx: RenderContext) -> RenderableType:
+        pass
+
+
+class ClickableWidget(Widget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    @abstractmethod
+    def activate(
+        self, page: Page | None = None, session: SSHServerSession | None = None
+    ):
         pass
 
 

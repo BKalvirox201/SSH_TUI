@@ -1,12 +1,11 @@
+import asyncio
 from typing import TYPE_CHECKING
 
 from core.server_logging import server_logger
-from events.exit_events import SessionCloseEvent
+from events import SessionClose
 
 if TYPE_CHECKING:
     from core.session.session import SSHServerSession
-
-import asyncio
 
 
 class SSHSessionManager:
@@ -27,7 +26,9 @@ class SSHSessionManager:
         """Signal all sessions to close, wait up to `timeout` seconds."""
         # TODO: Create a stand-alone broadcast function and then have this one as well which calls it
         for session in self.sessions:
-            session.state.event_queue.put_nowait(SessionCloseEvent())
+            session.event_queue.put_nowait(
+                SessionClose(exit_code=0, exit_message="Session closed by server")
+            )
 
         try:
             await asyncio.wait_for(self._wait_sessions_empty(), timeout=timeout)

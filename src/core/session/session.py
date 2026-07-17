@@ -1,22 +1,27 @@
+from __future__ import annotations
+
 import asyncio
+from collections.abc import Callable
+import contextlib
 import logging
 from typing import cast
 import uuid
 
 import asyncssh
+from rich.theme import Theme
 
 from core.io.writer import SSHChannelWriter
 from core.lifecycle.session_main import session_main
-from core.lifecycle.session_start import session_start
-from core.lifecycle.session_stop import session_stop
 from core.server_logging import session_logger
 from core.session.session_manager import SSHSessionManager
-from core.session.session_state import SessionState
 from events import (
     NavEvent,
     RenderEvent,
     SessionClose,
 )
+from renderer.renderer import Renderer
+from ui.pages.mainmenu import MainMenu
+from ui.pages.page import Page
 from ui.widgets.widget import NavDirection
 
 
@@ -26,17 +31,19 @@ class SSHServerSession(asyncssh.SSHServerSession):
         super().__init__(*args, **kwargs)
         self.session_id = str(uuid.uuid4())
         self.session_manager = session_manager
-        self._chan = None
-        self.session_main = None
+        self.writer: SSHChannelWriter
+        self.session_main: Callable
+        self.event_queue: asyncio.Queue
         self.width: int = 0
         self.height: int = 0
-        self.writer: SSHChannelWriter
+        self.pages: dict[str, Page]
+        self.current_page: Page
+        self.renderer: Renderer
         self.logger: logging.LoggerAdapter
-        self.state: SessionState
 
     def connection_made(self, chan: asyncssh.SSHServerChannel):
-        self._chan = cast(asyncssh.SSHLineEditorChannel, chan)
-        self.writer = SSHChannelWriter(self._chan)
+        channel = cast(asyncssh.SSHLineEditorChannel, chan)
+        self.writer = SSHChannelWriter(channel)
         self.logger = logging.LoggerAdapter(
             session_logger,
             {"session_id": self.session_id},
@@ -56,7 +63,8 @@ class SSHServerSession(asyncssh.SSHServerSession):
 
         if hasattr(self, "session_main") and not self.session_main.done():
             # TODO: Work out how to mute RUFF warnings
-            asyncio.create_task(session_stop(self))
+            # Actually understand how asyncio and the async keyword work
+            asyncio.create_task(self.__deinitialise_session())
 
     def pty_requested(self, term_type, term_size, term_modes):
         _, _ = term_type, term_modes
@@ -67,8 +75,8 @@ class SSHServerSession(asyncssh.SSHServerSession):
         return True
 
     def session_started(self):
-        self.state = session_start(self)  # TODO: Merge this struct into session
-        self.state.event_queue.put_nowait(RenderEvent(self.width, self.height))
+        self.__initialise_session()
+        self.event_queue.put_nowait(RenderEvent(self.width, self.height))
         self.session_manager.add(self)
         self.session_main = asyncio.create_task(session_main(self))
 
@@ -80,18 +88,19 @@ class SSHServerSession(asyncssh.SSHServerSession):
 
         data = data.lower()
         if data and data.strip() in ("q", "\x03"):
-            self.state.event_queue.put_nowait(
+            self.event_queue.put_nowait(
                 SessionClose(exit_code=0, exit_message="Session closed by user")
             )
 
+        # TODO: Do inputs need to be separate events?
         if data and data.strip() in ("w", "k"):
-            self.state.event_queue.put_nowait(NavEvent(NavDirection.North))
+            self.event_queue.put_nowait(NavEvent(NavDirection.North))
         if data and data.strip() in ("a", "h"):
-            self.state.event_queue.put_nowait(NavEvent(NavDirection.East))
+            self.event_queue.put_nowait(NavEvent(NavDirection.East))
         if data and data.strip() in ("s", "j"):
-            self.state.event_queue.put_nowait(NavEvent(NavDirection.South))
+            self.event_queue.put_nowait(NavEvent(NavDirection.South))
         if data and data.strip() in ("d", "l"):
-            self.state.event_queue.put_nowait(NavEvent(NavDirection.West))
+            self.event_queue.put_nowait(NavEvent(NavDirection.West))
 
         # enter = select
         # TODO: we need to worry about typing in long form inputs..
@@ -101,4 +110,55 @@ class SSHServerSession(asyncssh.SSHServerSession):
         _, _ = pixwidth, pixheight
         self.width = width
         self.height = height
-        self.state.event_queue.put_nowait(RenderEvent(self.width, self.height))
+        self.event_queue.put_nowait(RenderEvent(self.width, self.height))
+
+    def __initialise_session(self):
+        # Terminal setup
+        self.writer.clear_input()
+        self.writer.set_line_mode(False)
+        self.writer.set_echo(False)
+        self.writer.set_alt_screen(True)
+        self.writer.set_window_title("Nigel's Amazing TUI")
+        self.writer.set_cursor_visibility(False)
+
+        # Event Queue
+        self.event_queue: asyncio.Queue = asyncio.Queue()
+
+        # Pages
+        self.pages: dict[str, Page] = {
+            "MainMenu": MainMenu(),
+        }
+        self.current_page = next(iter(self.pages))
+
+        # Renderer and theme
+        self.renderer = Renderer(self.writer)
+        client_theme = Theme(
+            {
+                "primary": "yellow",
+                "secondary": "cyan",
+                "error": "red",
+                "highlight": "bright_red",
+                "background": "black",
+                "foreground": "white",
+                "heading": "blue",
+            }
+        )
+        self.renderer.set_theme(client_theme)
+
+    async def __deinitialise_session(self) -> None:
+        if self.writer.channel and not self.writer.channel.is_closing():
+            self.writer.set_cursor_visibility(True)
+            self.writer.set_alt_screen(False)
+
+        assert self.self_main
+        self.self_main.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await self.self_main
+
+        if self.writer.channel and not self.writer.channel.is_closing():
+            try:
+                self.writer.channel.exit(0)
+            except Exception:
+                self.logger.debug("shutdown: channel exit failed (already closed)")
+
+        self.self_manager.remove(self)

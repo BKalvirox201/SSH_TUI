@@ -1,5 +1,7 @@
 from widget import NavDirection, Widget
 
+from events import CursorEvent, NavEvent
+
 
 class Cursor:
     def __init__(self, start: Widget) -> None:
@@ -24,18 +26,20 @@ class Cursor:
             case NavDirection.West:
                 next_widget = self.focused.west
             case NavDirection.Parent:
-                if self.focused.next.parent.owner is not self.focused:
-                    self.last_selected_child_history[self.focused.next.parent] = (
-                        self.focused.next
-                    )
+                if self.focused.parent is not self.focused:
+                    self.last_selected_child_history[self.focused.parent] = self.focused
                 next_widget = self.focused.parent
             case NavDirection.Children:
-                if self.focused.next in self.last_selected_child_history:
+                if self.focused in self.last_selected_child_history:
                     next_widget = self.last_selected_child_history[self.focused]
-                elif len(self.focused.next.children) > 0:
+                elif len(self.focused.children) > 0:
                     next_widget = self.focused.children[0]
                 else:
                     next_widget = self.focused
 
         if self.focused is not next_widget:
             self.focused = next_widget
+
+    def handle_event(self, event: CursorEvent):
+        if isinstance(event, NavEvent):
+            self.walk(event.direction)

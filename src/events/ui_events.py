@@ -15,5 +15,4 @@ class UpdateThemeEvent(UIEvent):
 
 @dataclass
 class RenderEvent(UIEvent):
-    width: int
-    height: int
+    pass

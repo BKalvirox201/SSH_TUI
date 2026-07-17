@@ -24,7 +24,6 @@ from ui.pages.page import Page
 from ui.widgets.widget import NavDirection
 
 
-# TODO: Session Start and Stop should be private functions of this class and stored in this file
 class SSHServerSession(asyncssh.SSHServerSession):
     def __init__(self, session_manager: SSHSessionManager, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -33,20 +32,17 @@ class SSHServerSession(asyncssh.SSHServerSession):
         self.writer: SSHChannelWriter
         self.session_main: asyncio.Task
         self.event_queue: asyncio.Queue
-        self.width: int = 0
-        self.height: int = 0
         self.pages: dict[str, Page]
         self.current_page: Page
         self.renderer: Renderer
-        self.logger: logging.LoggerAdapter
-
-    def connection_made(self, chan: asyncssh.SSHServerChannel):
-        channel = cast(asyncssh.SSHLineEditorChannel, chan)
-        self.writer = SSHChannelWriter(channel)
         self.logger = logging.LoggerAdapter(
             session_logger,
             {"session_id": self.session_id},
         )
+
+    def connection_made(self, chan: asyncssh.SSHServerChannel):
+        channel = cast(asyncssh.SSHLineEditorChannel, chan)
+        self.writer = SSHChannelWriter(channel)
 
     def connection_lost(self, exc):
         """
@@ -62,12 +58,13 @@ class SSHServerSession(asyncssh.SSHServerSession):
 
         if not self.session_main.done():
             # TODO: Work out how to mute RUFF warnings
-            # Actually understand how asyncio and the async keyword work
-            asyncio.create_task(self.__deinitialise_session())
+            # TODO: Actually understand how asyncio and the async keyword work
+            asyncio.create_task(self.__deinitialise_session)
 
     def pty_requested(self, term_type, term_size, term_modes):
         _, _ = term_type, term_modes
-        self.width, self.height, _, _ = term_size
+        width, height, _, _ = term_size
+        self.renderer.set_console_width_height(width, height)
         return True
 
     def shell_requested(self) -> bool:
@@ -75,7 +72,7 @@ class SSHServerSession(asyncssh.SSHServerSession):
 
     def session_started(self):
         self.__initialise_session()
-        self.event_queue.put_nowait(RenderEvent(self.width, self.height))
+        self.event_queue.put_nowait(RenderEvent())
         self.session_manager.add(self)
         self.session_main = asyncio.create_task(session_main(self))
 
@@ -84,21 +81,19 @@ class SSHServerSession(asyncssh.SSHServerSession):
         self.logger.debug(f"[SSH] Data received: {data!r}")
 
         # TODO: Move to input handler
-
+        # TODO: Do inputs need to be separate events?
         data = data.lower()
         if data and data.strip() in ("q", "\x03"):
             self.event_queue.put_nowait(
                 SessionClose(exit_code=0, exit_message="Session closed by user")
             )
-
-        # TODO: Do inputs need to be separate events?
-        if data and data.strip() in ("w", "k"):
+        elif data and data.strip() in ("w", "k"):
             self.event_queue.put_nowait(NavEvent(NavDirection.North))
-        if data and data.strip() in ("a", "h"):
+        elif data and data.strip() in ("a", "h"):
             self.event_queue.put_nowait(NavEvent(NavDirection.East))
-        if data and data.strip() in ("s", "j"):
+        elif data and data.strip() in ("s", "j"):
             self.event_queue.put_nowait(NavEvent(NavDirection.South))
-        if data and data.strip() in ("d", "l"):
+        elif data and data.strip() in ("d", "l"):
             self.event_queue.put_nowait(NavEvent(NavDirection.West))
 
         # enter = select
@@ -107,9 +102,8 @@ class SSHServerSession(asyncssh.SSHServerSession):
     def terminal_size_changed(self, width, height, pixwidth, pixheight):
         """Handle terminal resize by updating the renderer and notifying the current page."""
         _, _ = pixwidth, pixheight
-        self.width = width
-        self.height = height
-        self.event_queue.put_nowait(RenderEvent(self.width, self.height))
+        self.renderer.set_console_width_height(width, height)
+        self.event_queue.put_nowait(RenderEvent())
 
     def __initialise_session(self):
         # Terminal setup
@@ -144,20 +138,20 @@ class SSHServerSession(asyncssh.SSHServerSession):
         )
         self.renderer.set_theme(client_theme)
 
+    # TODO: Ensure all exit paths call this function #CrashSafe
     async def __deinitialise_session(self) -> None:
-        if self.writer.channel and not self.writer.channel.is_closing():
-            self.writer.set_cursor_visibility(True)
-            self.writer.set_alt_screen(False)
-
         assert self.self_main
-        self.self_main.cancel()
+        self.session_main.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await self.self_main
 
-        if self.writer.channel and not self.writer.channel.is_closing():
-            try:
-                self.writer.channel.exit(0)
-            except Exception:
-                self.logger.debug("shutdown: channel exit failed (already closed)")
+        assert self.writer.channel
+
+        # NOTE: If not is_closing, then it has already closed.
+        # TODO: Add a seperate check for this
+        if self.writer.channel.is_closing():
+            self.writer.set_cursor_visibility(True)
+            self.writer.set_alt_screen(False)
+            self.writer.channel.exit(0)
 
         self.self_manager.remove(self)

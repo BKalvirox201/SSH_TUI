@@ -14,8 +14,8 @@ class SessionClose(SessionEvent):
 
 
 @dataclass
-class ChangeCurrentPage(SessionEvent):
-    new_page_name: str
+class ChangePage(SessionEvent):
+    page_name: str
 
 
 @dataclass

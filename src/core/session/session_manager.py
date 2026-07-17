@@ -1,11 +1,11 @@
 import asyncio
 from typing import TYPE_CHECKING
 
-from core.server_logging import server_logger
-from events import SessionClose
+from src.core.server_logging import server_logger
+from src.events import SessionClose
 
 if TYPE_CHECKING:
-    from core.session.session import SSHServerSession
+    from src.core.session.session import SSHServerSession
 
 
 class SSHSessionManager:
@@ -17,13 +17,13 @@ class SSHSessionManager:
     def add(self, session: SSHServerSession):
         self.sessions.append(session)
         server_logger.info(
-            f"""Session {session.id} created, Active sessions: {len(self.sessions)}"""
+            f"""Session {session.session_id} created, Active sessions: {len(self.sessions)}"""
         )
 
     def remove(self, session: SSHServerSession):
         self.sessions.remove(session)
         server_logger.info(
-            f"""Session {session.id} closed, Active sessions: {len(self.sessions)}"""
+            f"""Session {session.session_id} closed, Active sessions: {len(self.sessions)}"""
         )
 
     async def close_all_sessions(self, timeout: float = 5.0):
@@ -35,11 +35,11 @@ class SSHSessionManager:
             )
 
         try:
-            await asyncio.wait_for(self._wait_sessions_empty(), timeout=timeout)
+            await asyncio.wait_for(self.__wait_sessions_empty(), timeout=timeout)
         except TimeoutError:
             print(f"Timeout reached: {len(self.sessions)} session(s) still open")
 
-    async def _wait_sessions_empty(self):
+    async def __wait_sessions_empty(self):
         """Poll until sessions set is empty without blocking the loop."""
         while self.sessions:
             await asyncio.sleep(0.1)

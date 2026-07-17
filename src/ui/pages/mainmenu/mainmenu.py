@@ -2,13 +2,13 @@ from typing import override
 
 from rich.layout import Layout
 
-from events import ClickedEvent, NavEvent, PageEvent
-from renderer.render_context import RenderContext
-from ui.pages.mainmenu.body import TestBody as Body
-from ui.pages.mainmenu.footer import Footer
-from ui.pages.page import Page
-from ui.widgets.cursor import Cursor
-from ui.widgets.widget import ClickableWidget, NavDirection
+from src.events import ClickedEvent, NavEvent, PageEvent
+from src.renderer.render_context import RenderContext
+from src.ui.pages.mainmenu.body import TestBody as Body
+from src.ui.pages.mainmenu.footer import Footer
+from src.ui.pages.page import Page
+from src.ui.widgets.cursor import Cursor
+from src.ui.widgets.widget import ClickableWidget, NavDirection
 
 
 class MainMenu(Page):
@@ -88,4 +88,4 @@ class MainMenu(Page):
         elif isinstance(event, ClickedEvent) and isinstance(
             self.cursor.focused, ClickableWidget
         ):
-            self.cursor.focused.activate()
+            self.cursor.focused.clicked()

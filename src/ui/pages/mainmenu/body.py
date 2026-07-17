@@ -4,8 +4,8 @@ from rich import box
 from rich.align import Align
 from rich.panel import Panel
 
-from renderer.render_context import RenderContext
-from ui.widgets.widget import Widget
+from src.renderer.render_context import RenderContext
+from src.ui.widgets.widget import Widget
 
 
 class TestBody(Widget):

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from events.session_events import SessionEvent
+from src.events.session_events import SessionEvent
 
 
 @dataclass

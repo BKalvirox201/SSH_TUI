@@ -8,20 +8,20 @@ import uuid
 
 import asyncssh
 from rich.theme import Theme
-from session_main import session_main
-from session_manager import SSHSessionManager
 
-from core.io.writer import SSHChannelWriter
-from core.server_logging import session_logger
-from events import (
+from src.core.io.writer import SSHChannelWriter
+from src.core.server_logging import session_logger
+from src.core.session.session_main import session_main
+from src.core.session.session_manager import SSHSessionManager
+from src.events import (
     NavEvent,
     RenderEvent,
     SessionClose,
 )
-from renderer.renderer import Renderer
-from ui.pages.mainmenu import MainMenu
-from ui.pages.page import Page
-from ui.widgets.widget import NavDirection
+from src.renderer.renderer import Renderer
+from src.ui.pages.mainmenu import MainMenu
+from src.ui.pages.page import Page
+from src.ui.widgets.widget import NavDirection
 
 
 class SSHServerSession(asyncssh.SSHServerSession):
@@ -59,7 +59,7 @@ class SSHServerSession(asyncssh.SSHServerSession):
         if not self.session_main.done():
             # TODO: Work out how to mute RUFF warnings
             # TODO: Actually understand how asyncio and the async keyword work
-            asyncio.create_task(self.__deinitialise_session)
+            asyncio.create_task(self.__deinitialise_session())
 
     def pty_requested(self, term_type, term_size, term_modes):
         _, _ = term_type, term_modes
@@ -121,10 +121,10 @@ class SSHServerSession(asyncssh.SSHServerSession):
         self.pages: dict[str, Page] = {
             "MainMenu": MainMenu(),
         }
-        self.current_page = next(iter(self.pages))
+        self.current_page = next(iter(self.pages.values()))
 
         # Renderer and theme
-        self.renderer = Renderer(self.writer)
+        self.renderer = Renderer(self)
         client_theme = Theme(
             {
                 "primary": "yellow",
@@ -140,10 +140,10 @@ class SSHServerSession(asyncssh.SSHServerSession):
 
     # TODO: Ensure all exit paths call this function #CrashSafe
     async def __deinitialise_session(self) -> None:
-        assert self.self_main
+        assert self.session_main
         self.session_main.cancel()
         with contextlib.suppress(asyncio.CancelledError):
-            await self.self_main
+            await self.session_main
 
         assert self.writer.channel
 
@@ -154,4 +154,4 @@ class SSHServerSession(asyncssh.SSHServerSession):
             self.writer.set_alt_screen(False)
             self.writer.channel.exit(0)
 
-        self.self_manager.remove(self)
+        self.session_manager.remove(self)

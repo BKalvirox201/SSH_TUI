@@ -3,10 +3,10 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
-from events import ChangePage, PageEvent, RenderEvent, SessionClose
+from src.events import ChangePage, PageEvent, RenderEvent, SessionClose
 
 if TYPE_CHECKING:
-    from core.session.session import SSHServerSession
+    from src.core.session.session import SSHServerSession
 
 
 async def session_main(session: SSHServerSession):
@@ -31,7 +31,7 @@ async def session_main(session: SSHServerSession):
                 session.event_queue.put_nowait(RenderEvent())
 
             elif isinstance(event, ChangePage):
-                if event.pagename not in session.pages:
+                if event.page_name not in session.pages:
                     # TODO: Throw Error
                     continue
                 session.current_page = session.pages[event.page_name]

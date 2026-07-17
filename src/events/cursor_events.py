@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from events.page_events import PageEvent
-from ui.widgets.widget import NavDirection
+from src.events.page_events import PageEvent
+from src.ui.widgets.widget import NavDirection
 
 
 @dataclass

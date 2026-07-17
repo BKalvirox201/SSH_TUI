@@ -3,7 +3,7 @@ from enum import Enum
 
 from rich.console import RenderableType
 
-from renderer.render_context import RenderContext
+from src.renderer.render_context import RenderContext
 
 
 class NavDirection(Enum):

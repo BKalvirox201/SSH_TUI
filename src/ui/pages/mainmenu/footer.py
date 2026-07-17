@@ -2,8 +2,8 @@ from typing import override
 
 from rich.text import Text
 
-from renderer.render_context import RenderContext
-from ui.widgets.widget import Widget
+from src.renderer.render_context import RenderContext
+from src.ui.widgets.widget import Widget
 
 
 # NOTE: Lets move this to the widgets section

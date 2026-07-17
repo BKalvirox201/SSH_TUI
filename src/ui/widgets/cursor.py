@@ -1,4 +1,4 @@
-from widget import NavDirection, Widget
+from src.ui.widgets.widget import NavDirection, Widget
 
 
 class Cursor:

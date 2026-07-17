@@ -1,11 +1,12 @@
 from typing import TYPE_CHECKING
 
-from render_context import RenderContext
 from rich.console import Console
 from rich.theme import Theme
 
+from src.renderer.render_context import RenderContext
+
 if TYPE_CHECKING:
-    from core.session.session import SSHServerSession
+    from src.core.session.session import SSHServerSession
 
 
 class Renderer:

@@ -12,15 +12,19 @@ class SSHSessionManager:
     """Tracks all active SSH sessions safely."""
 
     def __init__(self):
-        self.sessions: set[SSHServerSession] = set()
+        self.sessions: list[SSHServerSession] = []
 
     def add(self, session: SSHServerSession):
-        self.sessions.add(session)
-        server_logger.info(f"Active sessions: {len(self.sessions)}")
+        self.sessions.append(session)
+        server_logger.info(
+            f"""Session {session.id} created, Active sessions: {len(self.sessions)}"""
+        )
 
     def remove(self, session: SSHServerSession):
-        self.sessions.discard(session)
-        server_logger.info(f"Active sessions: {len(self.sessions)}")
+        self.sessions.remove(session)
+        server_logger.info(
+            f"""Session {session.id} closed, Active sessions: {len(self.sessions)}"""
+        )
 
     async def close_all_sessions(self, timeout: float = 5.0):
         """Signal all sessions to close, wait up to `timeout` seconds."""

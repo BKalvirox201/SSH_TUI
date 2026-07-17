@@ -1,10 +1,11 @@
 from dataclasses import dataclass
 
+from events.page_events import PageEvent
 from ui.widgets.widget import NavDirection
 
 
 @dataclass
-class CursorEvent:
+class CursorEvent(PageEvent):
     pass
 
 
@@ -16,5 +17,5 @@ class NavEvent(CursorEvent):
 
 
 @dataclass
-class ClickEvent(CursorEvent):
+class ClickedEvent(CursorEvent):
     pass

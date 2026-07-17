@@ -2,15 +2,14 @@ from typing import override
 
 from rich.layout import Layout
 
-from events.page_events import ClickEvent, NavEvent, PageEvent
+from events import ClickedEvent, NavEvent, PageEvent
 from renderer.render_context import RenderContext
 from ui.pages.mainmenu.body import TestBody as Body
 from ui.pages.mainmenu.footer import Footer
 from ui.pages.page import Page
 from ui.widgets.cursor import Cursor
-from ui.widgets.widget import NavDirection
+from ui.widgets.widget import ClickableWidget, NavDirection
 
-from core.session.session import SSHServerSession
 
 class MainMenu(Page):
     def __init__(self) -> None:
@@ -19,6 +18,11 @@ class MainMenu(Page):
         self.layout = Layout(name="root")
         self.inner = Layout(name="inner_layout")
 
+        self.layout.split_column(
+            self.inner,
+            Layout(name="footer", size=1),
+        )
+
         self.inner.split_column(
             Layout(name="upper"),
             Layout(name="lower"),
@@ -26,11 +30,6 @@ class MainMenu(Page):
         self.inner["lower"].split_row(
             Layout(name="left"),
             Layout(name="right"),
-        )
-
-        self.layout.split_column(
-            self.inner,
-            Layout(name="footer", size=1),
         )
 
         # Widgets
@@ -45,7 +44,7 @@ class MainMenu(Page):
         # Connect the Widgets
         self.body_1.connect(self.body_2, NavDirection.South)
         self.body_2.connect(self.body_1, NavDirection.North)
-        self.body_2.connect(self.body_3, NavDirection.West)
+        self.body_2.connect(self.body_3, NavDirection.East)
         self.body_3.connect(self.body_1, NavDirection.North)
         self.body_3.connect(self.body_2, NavDirection.East)
 
@@ -84,7 +83,9 @@ class MainMenu(Page):
     @override
     def handle_event(self, event: PageEvent):
         if isinstance(event, NavEvent):
-            self.cursor.walk(NavEvent.direction)
-        if isinstance(event, ClickEvent) and isinstance(self.cursor.focused, ):
+            self.cursor.walk(event.direction)
 
-            
+        elif isinstance(event, ClickedEvent) and isinstance(
+            self.cursor.focused, ClickableWidget
+        ):
+            self.cursor.focused.activate()

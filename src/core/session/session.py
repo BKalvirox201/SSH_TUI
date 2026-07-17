@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable
 import contextlib
 import logging
 from typing import cast
@@ -9,11 +8,11 @@ import uuid
 
 import asyncssh
 from rich.theme import Theme
+from session_main import session_main
+from session_manager import SSHSessionManager
 
 from core.io.writer import SSHChannelWriter
-from core.lifecycle.session_main import session_main
 from core.server_logging import session_logger
-from core.session.session_manager import SSHSessionManager
 from events import (
     NavEvent,
     RenderEvent,
@@ -32,7 +31,7 @@ class SSHServerSession(asyncssh.SSHServerSession):
         self.session_id = str(uuid.uuid4())
         self.session_manager = session_manager
         self.writer: SSHChannelWriter
-        self.session_main: Callable
+        self.session_main: asyncio.Task
         self.event_queue: asyncio.Queue
         self.width: int = 0
         self.height: int = 0
@@ -61,7 +60,7 @@ class SSHServerSession(asyncssh.SSHServerSession):
         else:
             self.logger.info("Connection closed cleanly")
 
-        if hasattr(self, "session_main") and not self.session_main.done():
+        if not self.session_main.done():
             # TODO: Work out how to mute RUFF warnings
             # Actually understand how asyncio and the async keyword work
             asyncio.create_task(self.__deinitialise_session())

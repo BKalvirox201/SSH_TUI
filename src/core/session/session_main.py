@@ -17,9 +17,7 @@ async def session_main(session: SSHServerSession):
                 session.logger.info(
                     f"Exiting with code: {SessionClose.exit_code}, with message: {SessionClose.exit_message}"
                 )
-                await (
-                    session.__deinitialise_session()
-                )  # TODO: why not schedule asyncio task?
+                await session.__deinitialise_session()
                 break
 
             if isinstance(event, RenderEvent):
@@ -42,9 +40,9 @@ async def session_main(session: SSHServerSession):
                 if not hasattr(current_page, "cursor"):
                     continue
                 current_page.cursor.handle_event(CursorEvent)
+                session.event_queue.put_nowait(
+                    RenderEvent(session.width, session.height)
+                )
 
-    # TODO: Do we still need this?
     except asyncio.CancelledError:
         pass
-    except Exception as e:
-        session.logger.exception(f"Event loop exception: {e}")

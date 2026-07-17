@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 
+# NOTE: ALL EVENTS ARE SESSION EVENTS
 @dataclass
 class SessionEvent:
     pass

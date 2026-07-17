@@ -9,5 +9,4 @@ class Button(Widget):
         self.callback = callback
 
     def activate(self):
-        # TODO: This is probably going to want to take some page/session data as an arg
         self.callback()

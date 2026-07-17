@@ -1,7 +1,5 @@
 from widget import NavDirection, Widget
 
-from events import CursorEvent, NavEvent
-
 
 class Cursor:
     def __init__(self, start: Widget) -> None:
@@ -12,6 +10,7 @@ class Cursor:
         # The history for which child to travel down can live on the node instead.
         # This implementation is only required if you want multiple cursors
         # (atleast you don't have to manually manage the memory for this yourself)
+        # Not even sure I want this feature
         self.last_selected_child_history: dict[Widget, Widget] = {}
 
     def walk(self, direction: NavDirection) -> None:
@@ -39,7 +38,3 @@ class Cursor:
 
         if self.focused is not next_widget:
             self.focused = next_widget
-
-    def handle_event(self, event: CursorEvent):
-        if isinstance(event, NavEvent):
-            self.walk(event.direction)

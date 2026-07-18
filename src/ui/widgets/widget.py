@@ -16,8 +16,10 @@ class NavDirection(Enum):
 
 
 class Widget(ABC):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, name: str = ""):
+        super().__init__()
+
+        self.name = name
 
         # NOTE: Nodes link to themselves if they don't link to other nodes
         self.parent: Widget = self

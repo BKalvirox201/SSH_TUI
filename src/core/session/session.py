@@ -59,11 +59,12 @@ class SSHServerSession(asyncssh.SSHServerSession):
         if not self.session_main.done():
             # TODO: Work out how to mute RUFF warnings
             # TODO: Actually understand how asyncio and the async keyword work
-            asyncio.create_task(self.__deinitialise_session())
+            asyncio.create_task(self._deinitialise_session())
 
     def pty_requested(self, term_type, term_size, term_modes):
         _, _ = term_type, term_modes
         width, height, _, _ = term_size
+        self.renderer = Renderer(self)
         self.renderer.set_console_width_height(width, height)
         return True
 
@@ -71,14 +72,17 @@ class SSHServerSession(asyncssh.SSHServerSession):
         return True
 
     def session_started(self):
-        self.__initialise_session()
-        self.event_queue.put_nowait(RenderEvent())
-        self.session_manager.add(self)
-        self.session_main = asyncio.create_task(session_main(self))
+        try:
+            self._initialise_session()
+            self.event_queue.put_nowait(RenderEvent())
+            self.session_manager.add(self)
+            self.session_main = asyncio.create_task(session_main(self))
+        except Exception as e:
+            self.logger.critical(e)
 
     def data_received(self, data: str, datatype):
         _ = datatype
-        self.logger.debug(f"[SSH] Data received: {data!r}")
+        # self.logger.debug(f"[SSH] Data received: {data!r}")
 
         # TODO: Move to input handler
         # TODO: Do inputs need to be separate events?
@@ -89,11 +93,11 @@ class SSHServerSession(asyncssh.SSHServerSession):
             )
         elif data and data.strip() in ("w", "k"):
             self.event_queue.put_nowait(NavEvent(NavDirection.North))
-        elif data and data.strip() in ("a", "h"):
+        elif data and data.strip() in ("d", "l"):
             self.event_queue.put_nowait(NavEvent(NavDirection.East))
         elif data and data.strip() in ("s", "j"):
             self.event_queue.put_nowait(NavEvent(NavDirection.South))
-        elif data and data.strip() in ("d", "l"):
+        elif data and data.strip() in ("a", "h"):
             self.event_queue.put_nowait(NavEvent(NavDirection.West))
 
         # enter = select
@@ -105,7 +109,7 @@ class SSHServerSession(asyncssh.SSHServerSession):
         self.renderer.set_console_width_height(width, height)
         self.event_queue.put_nowait(RenderEvent())
 
-    def __initialise_session(self):
+    def _initialise_session(self):
         # Terminal setup
         self.writer.clear_input()
         self.writer.set_line_mode(False)
@@ -124,7 +128,6 @@ class SSHServerSession(asyncssh.SSHServerSession):
         self.current_page = next(iter(self.pages.values()))
 
         # Renderer and theme
-        self.renderer = Renderer(self)
         client_theme = Theme(
             {
                 "primary": "yellow",
@@ -139,19 +142,20 @@ class SSHServerSession(asyncssh.SSHServerSession):
         self.renderer.set_theme(client_theme)
 
     # TODO: Ensure all exit paths call this function #CrashSafe
-    async def __deinitialise_session(self) -> None:
+    async def _deinitialise_session(self) -> None:
+        if self.writer.channel and not self.writer.channel.is_closing():
+            self.writer.set_cursor_visibility(True)
+            self.writer.set_alt_screen(False)
+
         assert self.session_main
         self.session_main.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await self.session_main
 
-        assert self.writer.channel
-
-        # NOTE: If not is_closing, then it has already closed.
-        # TODO: Add a seperate check for this
-        if self.writer.channel.is_closing():
-            self.writer.set_cursor_visibility(True)
-            self.writer.set_alt_screen(False)
-            self.writer.channel.exit(0)
+        if self.writer.channel and not self.writer.channel.is_closing():
+            try:
+                self.writer.channel.exit(0)
+            except Exception:
+                self.logger.debug("shutdown: channel exit failed (already closed)")
 
         self.session_manager.remove(self)

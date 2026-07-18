@@ -25,12 +25,12 @@ class Renderer:
         self.console.height = height
 
     def render_current_page(self):
-        self.session.writer.clear_screen()
         current_page_layout = self.session.current_page.render(
             self.create_render_context()
         )
         self.console.print(current_page_layout, soft_wrap=False, end="")
         recorded_tui = self.console.export_text(clear=True, styles=True)[:-2]
+        self.session.writer.clear_screen()
         self.session.writer.write_tui(recorded_tui)
 
     def create_render_context(self) -> RenderContext:

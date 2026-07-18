@@ -11,13 +11,14 @@ if TYPE_CHECKING:
 
 async def session_main(session: SSHServerSession):
     try:
+        session.logger.debug("Session Main Started")
         while True:
             event = await session.event_queue.get()
             if isinstance(event, SessionClose):
                 session.logger.info(
                     f"Exiting with code: {event.exit_code}, with message: {event.exit_message}"
                 )
-                await session.__deinitialise_session()
+                await session._deinitialise_session()
                 # TODO: Does this break ever get called?
                 break
 

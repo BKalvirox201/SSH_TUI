@@ -16,7 +16,7 @@ class MainMenu(Page):
 
         # Geometry
         self.layout = Layout(name="root")
-        self.inner = Layout(name="inner_layout")
+        self.inner = Layout(name="inner")
 
         self.layout.split_column(
             self.inner,
@@ -33,9 +33,9 @@ class MainMenu(Page):
         )
 
         # Widgets
-        self.body_1 = Body()
-        self.body_2 = Body()
-        self.body_3 = Body()
+        self.body_1 = Body("Body 1")
+        self.body_2 = Body("Body 2")
+        self.body_3 = Body("Body 3")
         self.footer = Footer(
             left=" Navigate: h/j/k/l or a/s/w/d, q to quit",
             right="Trademark: SaltyCorp 2026 ",
@@ -46,7 +46,7 @@ class MainMenu(Page):
         self.body_2.connect(self.body_1, NavDirection.North)
         self.body_2.connect(self.body_3, NavDirection.East)
         self.body_3.connect(self.body_1, NavDirection.North)
-        self.body_3.connect(self.body_2, NavDirection.East)
+        self.body_3.connect(self.body_2, NavDirection.West)
 
         # Cursor
         self.cursor = Cursor(self.body_1)

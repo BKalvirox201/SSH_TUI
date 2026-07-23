@@ -1,11 +1,11 @@
 import asyncio
 from typing import TYPE_CHECKING
 
-from src.core.server_logging import server_logger
 from src.events import SessionClose
+from src.server_logging import server_logger
 
 if TYPE_CHECKING:
-    from src.core.session.session import SSHServerSession
+    from src.session.session import SSHServerSession
 
 
 class SSHSessionManager:

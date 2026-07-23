@@ -2,19 +2,27 @@ from typing import override
 
 from rich.layout import Layout
 
-from src.events import ClickedEvent, NavEvent, PageEvent
 from src.renderer.render_context import RenderContext
 from src.ui.pages.mainmenu.body import TestBody as Body
 from src.ui.pages.mainmenu.footer import Footer
 from src.ui.pages.page import Page
-from src.ui.widgets.cursor import Cursor
-from src.ui.widgets.widget import ClickableWidget, NavDirection
+from src.ui.widgets.widget import NavDirection
 
 
 class MainMenu(Page):
     def __init__(self) -> None:
+        # Widgets
+        self.body_1 = Body("Body 1", lambda: print("Body 1"))
+        self.body_2 = Body("Body 2", lambda: print("Body 2"))
+        self.body_3 = Body("Body 3", lambda: print("Body 3"))
 
-        # Geometry
+        super().__init__(start_widget=self.body_1)
+
+        self.footer = Footer(
+            left=" Navigate: h/j/k/l or a/s/w/d, q to quit",
+            right="Trademark: SaltyCorp 2026 ",
+        )
+
         self.layout = Layout(name="root")
         self.inner = Layout(name="inner")
 
@@ -27,65 +35,56 @@ class MainMenu(Page):
             Layout(name="upper"),
             Layout(name="lower"),
         )
+
         self.inner["lower"].split_row(
             Layout(name="left"),
             Layout(name="right"),
         )
 
-        # Widgets
-        self.body_1 = Body("Body 1")
-        self.body_2 = Body("Body 2")
-        self.body_3 = Body("Body 3")
-        self.footer = Footer(
-            left=" Navigate: h/j/k/l or a/s/w/d, q to quit",
-            right="Trademark: SaltyCorp 2026 ",
-        )
-
-        # Connect the Widgets
+        # Navigation graph
         self.body_1.connect(self.body_2, NavDirection.South)
         self.body_2.connect(self.body_1, NavDirection.North)
+
         self.body_2.connect(self.body_3, NavDirection.East)
-        self.body_3.connect(self.body_1, NavDirection.North)
         self.body_3.connect(self.body_2, NavDirection.West)
 
-        # Cursor
-        self.cursor = Cursor(self.body_1)
+        self.body_3.connect(self.body_1, NavDirection.North)
 
     @override
     def render(self, ctx: RenderContext) -> Layout:
-        height_excl_footer = int(ctx.height - 1)
-        half_height = int(height_excl_footer / 2)
-        half_width = int(ctx.width / 2)
+        height_excl_footer = ctx.height - 1
+        half_height = height_excl_footer // 2
+        half_width = ctx.width // 2
 
-        body_1_ctx = ctx.child(
-            height=half_height,
-            focused=self.body_1 is self.cursor.focused,
+        self.layout["inner"]["upper"].update(
+            self.body_1.render(
+                ctx.child(
+                    height=half_height,
+                    focused=self.focused_widget is self.body_1,
+                )
+            )
         )
-        body_2_ctx = ctx.child(
-            width=half_width,
-            height=height_excl_footer - half_height,
-            focused=self.body_2 is self.cursor.focused,
-        )
-        body_3_ctx = ctx.child(
-            width=ctx.width - half_width,
-            height=height_excl_footer - half_height,
-            focused=self.body_3 is self.cursor.focused,
-        )
-        footer_ctx = ctx.child(height=1)
 
-        self.layout["inner"]["upper"].update(self.body_1.render(body_1_ctx))
-        self.layout["inner"]["lower"]["left"].update(self.body_2.render(body_2_ctx))
-        self.layout["inner"]["lower"]["right"].update(self.body_3.render(body_3_ctx))
-        self.layout["footer"].update(self.footer.render(footer_ctx))
+        self.layout["inner"]["lower"]["left"].update(
+            self.body_2.render(
+                ctx.child(
+                    width=half_width,
+                    height=height_excl_footer - half_height,
+                    focused=self.focused_widget is self.body_2,
+                )
+            )
+        )
+
+        self.layout["inner"]["lower"]["right"].update(
+            self.body_3.render(
+                ctx.child(
+                    width=ctx.width - half_width,
+                    height=height_excl_footer - half_height,
+                    focused=self.focused_widget is self.body_3,
+                )
+            )
+        )
+
+        self.layout["footer"].update(self.footer.render(ctx.child(height=1)))
 
         return self.layout
-
-    @override
-    def handle_event(self, event: PageEvent):
-        if isinstance(event, NavEvent):
-            self.cursor.walk(event.direction)
-
-        elif isinstance(event, ClickedEvent) and isinstance(
-            self.cursor.focused, ClickableWidget
-        ):
-            self.cursor.focused.clicked()

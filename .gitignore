@@ -2,3 +2,4 @@ ssh*
 __pycache__/
 *.py[cod]
 *.ruff_cache
+*.kra

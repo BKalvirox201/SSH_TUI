@@ -3,9 +3,9 @@ import signal
 
 import asyncssh
 
-from src.core.server_logging import server_logger
-from src.core.session.session import SSHServerSession
-from src.core.session.session_manager import SSHSessionManager
+from src.server_logging import server_logger
+from src.session.session import SSHServerSession
+from src.session.session_manager import SSHSessionManager
 
 
 class SSHServer(asyncssh.SSHServer):

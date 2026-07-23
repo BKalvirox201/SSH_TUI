@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from enum import Enum
 
 from rich.console import RenderableType
@@ -16,68 +19,77 @@ class NavDirection(Enum):
 
 
 class Widget(ABC):
-    def __init__(self, name: str = ""):
-        super().__init__()
-
+    def __init__(self, name: str = "") -> None:
         self.name = name
 
-        # NOTE: Nodes link to themselves if they don't link to other nodes
+        # Navigation graph
         self.parent: Widget = self
         self.north: Widget = self
         self.east: Widget = self
         self.south: Widget = self
         self.west: Widget = self
-        self.children: list = []
 
-    def connect(self, target: Widget, link_direction: NavDirection) -> None:
-        """
-        target: the widget you want to link to.
-        link_direction: the direction you want to go in order to move onto the widget.
-        """
+        self.children: list[Widget] = []
+        self.last_focused_child: Widget | None = None
 
-        assert target != self  # NOTE: cannot manually connect a node to itself
-        match link_direction:
+    def connect(self, target: Widget, direction: NavDirection) -> None:
+        assert target is not self
+
+        match direction:
             case NavDirection.North:
                 self.north = target
+
             case NavDirection.East:
                 self.east = target
+
             case NavDirection.South:
                 self.south = target
+
             case NavDirection.West:
                 self.west = target
+
             case NavDirection.Parent:
                 self.parent = target
                 target.children.append(self)
+
             case NavDirection.Children:
                 target.parent = self
                 self.children.append(target)
 
     def disconnect(self, target: Widget) -> None:
-        assert target != self  # NOTE: cannot manually disconnect a node from itself
+        assert target is not self
+
         if self.north is target:
             self.north = self
+
         elif self.east is target:
             self.east = self
+
         elif self.south is target:
             self.south = self
+
         elif self.west is target:
             self.west = self
+
         elif self.parent is target:
             self.parent = self
             target.children.remove(self)
+
         elif target in self.children:
-            target.parent = self
+            target.parent = target
             self.children.remove(target)
 
+            if self.last_focused_child is target:
+                self.last_focused_child = None
+
     @abstractmethod
-    def render(self, ctx: RenderContext) -> RenderableType:
-        pass
+    def render(self, ctx: RenderContext) -> RenderableType: ...
 
 
 class ClickableWidget(Widget):
-    @abstractmethod
-    def clicked(self):
-        pass
+    def __init__(self, name: str = "", callback: Callable = lambda: None) -> None:
+        super().__init__(name)
+        self.callback = callback
 
-
-# TODO: Make derived widget types.. eg "clickable", rewrite button and checkbox to use these
+    def clicked(self) -> None:
+        self.callback()

@@ -6,7 +6,7 @@ from rich.theme import Theme
 from src.renderer.render_context import RenderContext
 
 if TYPE_CHECKING:
-    from src.core.session.session import SSHServerSession
+    from src.session.session import SSHServerSession
 
 
 class Renderer:
@@ -25,7 +25,7 @@ class Renderer:
         self.console.height = height
 
     def render_current_page(self):
-        current_page_layout = self.session.current_page.render(
+        current_page_layout = self.session.cursor.focused_page.render(
             self.create_render_context()
         )
         self.console.print(current_page_layout, soft_wrap=False, end="")
@@ -37,7 +37,7 @@ class Renderer:
         return RenderContext(
             self.console.width,
             self.console.height,
-            False,  # NOTE: Maybe we need two types  of render context, page and widget
+            False,  # NOTE: Maybe we need two types of render context, page and widget
         )
 
     def set_theme(self, new_theme: Theme):

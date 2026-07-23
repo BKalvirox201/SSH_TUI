@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 
 from rich.layout import Layout
 
-from src.events.page_events import PageEvent
 from src.renderer.render_context import RenderContext
+from src.ui.widgets.widget import Widget
 
 
 class PageData:
@@ -11,14 +13,12 @@ class PageData:
 
 
 class Page(ABC):
-    @abstractmethod
-    def render(self, ctx: RenderContext) -> Layout:
-        raise NotImplementedError
+    def __init__(self, start_widget: Widget) -> None:
+        self.focused_widget: Widget = start_widget
 
     @abstractmethod
-    def handle_event(self, event: PageEvent):
-        raise NotImplementedError
+    def render(self, ctx: RenderContext) -> Layout: ...
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.__class__.__name__

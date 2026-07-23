@@ -25,6 +25,3 @@ class TestBody(ClickableWidget):
             expand=True,
             highlight=False,
         )
-
-    def clicked(self) -> None:
-        print(f"{self.name}")

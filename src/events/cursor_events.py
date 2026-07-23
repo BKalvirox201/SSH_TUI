@@ -10,6 +10,11 @@ class CursorEvent(PageEvent):
 
 
 @dataclass
+class ChangePage(CursorEvent):
+    page_name: str
+
+
+@dataclass
 class NavEvent(CursorEvent):
     """Navigation Events are unique to the cursor on each page"""
 

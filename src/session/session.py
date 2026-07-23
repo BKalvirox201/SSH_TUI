@@ -9,16 +9,18 @@ import uuid
 import asyncssh
 from rich.theme import Theme
 
-from src.core.io.writer import SSHChannelWriter
-from src.core.server_logging import session_logger
-from src.core.session.session_main import session_main
-from src.core.session.session_manager import SSHSessionManager
 from src.events import (
+    ClickedEvent,
     NavEvent,
     RenderEvent,
     SessionClose,
 )
+from src.io.writer import SSHChannelWriter
 from src.renderer.renderer import Renderer
+from src.server_logging import session_logger
+from src.session.session_main import session_main
+from src.session.session_manager import SSHSessionManager
+from src.ui.cursor import Cursor
 from src.ui.pages.mainmenu import MainMenu
 from src.ui.pages.page import Page
 from src.ui.widgets.widget import NavDirection
@@ -33,12 +35,12 @@ class SSHServerSession(asyncssh.SSHServerSession):
         self.session_main: asyncio.Task
         self.event_queue: asyncio.Queue
         self.pages: dict[str, Page]
-        self.current_page: Page
         self.renderer: Renderer
         self.logger = logging.LoggerAdapter(
             session_logger,
             {"session_id": self.session_id},
         )
+        self.cursor: Cursor
 
     def connection_made(self, chan: asyncssh.SSHServerChannel):
         channel = cast(asyncssh.SSHLineEditorChannel, chan)
@@ -99,6 +101,8 @@ class SSHServerSession(asyncssh.SSHServerSession):
             self.event_queue.put_nowait(NavEvent(NavDirection.South))
         elif data and data.strip() in ("a", "h"):
             self.event_queue.put_nowait(NavEvent(NavDirection.West))
+        elif data in ("\r", "\n"):
+            self.event_queue.put_nowait(ClickedEvent())
 
         # enter = select
         # TODO: we need to worry about typing in long form inputs..
@@ -125,7 +129,7 @@ class SSHServerSession(asyncssh.SSHServerSession):
         self.pages: dict[str, Page] = {
             "MainMenu": MainMenu(),
         }
-        self.current_page = next(iter(self.pages.values()))
+        self.cursor = Cursor(next(iter(self.pages.values())))
 
         # Renderer and theme
         client_theme = Theme(

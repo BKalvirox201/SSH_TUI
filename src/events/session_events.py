@@ -14,11 +14,6 @@ class SessionClose(SessionEvent):
 
 
 @dataclass
-class ChangePage(SessionEvent):
-    page_name: str
-
-
-@dataclass
 class Tick(SessionEvent):
     pass
 

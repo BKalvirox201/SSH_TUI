@@ -3,10 +3,11 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
-from src.events import ChangePage, PageEvent, RenderEvent, SessionClose
+from src.events import ChangePage, ClickedEvent, NavEvent, RenderEvent, SessionClose
+from src.ui.widgets.widget import ClickableWidget
 
 if TYPE_CHECKING:
-    from src.core.session.session import SSHServerSession
+    from src.session.session import SSHServerSession
 
 
 async def session_main(session: SSHServerSession):
@@ -27,16 +28,23 @@ async def session_main(session: SSHServerSession):
                 # Maybe it should live on the renderer and we pass the session to it
                 session.renderer.render_current_page()
 
-            elif isinstance(event, PageEvent):
-                session.current_page.handle_event(event)
-                session.event_queue.put_nowait(RenderEvent())
+            if isinstance(event, NavEvent):
+                session.cursor.walk(event.direction)
+                session.renderer.render_current_page()
+
+            elif isinstance(event, ClickedEvent) and isinstance(
+                session.cursor.focused_widget, ClickableWidget
+            ):
+                # TODO: Move this to the cursor
+                session.cursor.focused_widget.clicked()
+                session.renderer.render_current_page()
 
             elif isinstance(event, ChangePage):
                 if event.page_name not in session.pages:
                     # TODO: Throw Error
                     continue
-                session.current_page = session.pages[event.page_name]
-                session.event_queue.put_nowait(RenderEvent())
+                session.cursor.change_page(session.pages[event.page_name])
+                session.renderer.render_current_page()
 
     except asyncio.CancelledError:
         pass
